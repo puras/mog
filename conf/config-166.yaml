@@ -1,0 +1,21 @@
+runmode: release
+server:
+  addr: :11400
+registry:
+  registry_name: mog
+  register_address: 127.0.0.1
+  health_check_port: 11400
+log:
+  logger_file: ./logs/mog.log
+  log_max_date: 7
+  log_rotate_date: 1
+biz_log:
+  logger_file: ./logs/biz_mog.log
+  log_max_date: 7
+  log_rotate_date: 1
+db:
+  name: mog
+  location: 10.170.48.166
+  port: 3306
+  username: root
+  passwd: 123456
