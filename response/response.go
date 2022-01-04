@@ -1,12 +1,10 @@
 package response
 
 import (
+	errdef2 "mooko.net/mog/errdef"
+	"mooko.net/mog/util"
 	"net/http"
 	"time"
-
-	"mooko.net/mog/pkg/errdef"
-
-	"mooko.net/mog/pkg/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,12 +49,12 @@ func RespOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func RespErrCode(c *gin.Context, err errdef.ErrCode) {
+func RespErrCode(c *gin.Context, err errdef2.ErrCode) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
 
-func RespErr(c *gin.Context, err errdef.Error) {
+func RespErr(c *gin.Context, err errdef2.Error) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }

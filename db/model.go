@@ -1,10 +1,9 @@
 package db
 
 import (
-	"mooko.net/mog/pkg/ctype"
+	"mooko.net/mog/ctype"
+	"mooko.net/mog/util"
 	"time"
-
-	"mooko.net/mog/pkg/util"
 )
 
 /**

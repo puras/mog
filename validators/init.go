@@ -3,7 +3,7 @@ package validators
 import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator"
-	"mooko.net/mog/pkg/ctype"
+	"mooko.net/mog/ctype"
 )
 
 /**

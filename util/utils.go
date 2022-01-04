@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"mooko.net/mog/constants"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
-	"mooko.net/mog/pkg/constants"
 )
 
 /**

@@ -3,9 +3,9 @@ package util
 import (
 	"encoding/base64"
 	"fmt"
-	"mooko.net/mog/pkg/constants"
-	"mooko.net/mog/pkg/ctype"
-	"mooko.net/mog/pkg/errdef"
+	"mooko.net/mog/constants"
+	"mooko.net/mog/ctype"
+	errdef2 "mooko.net/mog/errdef"
 	"strings"
 	"time"
 )
@@ -31,16 +31,16 @@ func GeneratePassword(password, salt string) string {
 func ParsePassword(password string) (string, error) {
 	passwdBytes, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef2.New(errdef2.INVALID_PARAM)
 	}
 	passwdStr := string(passwdBytes)
 	passwdInfos := strings.Split(passwdStr, fmt.Sprintf("%s%s", constants.PasswordPrefix, constants.PasswordSep))
 	if len(passwdInfos) != 2 {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef2.New(errdef2.INVALID_PARAM)
 	}
 	passwdAndTimestamp := passwdInfos[1]
 	if strings.Index(passwdAndTimestamp, constants.PasswordSep) == -1 {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef2.New(errdef2.INVALID_PARAM)
 	}
 	return passwdAndTimestamp[:strings.LastIndex(passwdAndTimestamp, constants.PasswordSep)], nil
 }

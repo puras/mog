@@ -1,12 +1,11 @@
 package server
 
 import (
+	"mooko.net/mog/middleware"
+	"mooko.net/mog/validators"
 	"net/http"
 
 	"github.com/spf13/viper"
-
-	"mooko.net/mog/pkg/middleware"
-	"mooko.net/mog/pkg/validators"
 
 	"github.com/gin-gonic/gin"
 )

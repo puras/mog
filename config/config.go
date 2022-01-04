@@ -1,6 +1,7 @@
 package config
 
 import (
+	"mooko.net/mog/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"mooko.net/mog/pkg/util"
 )
 
 /**
@@ -110,7 +110,7 @@ func (c Config) initConfig() error {
 	}
 	viper.SetConfigType("yaml")
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("kuko")
+	viper.SetEnvPrefix("mog")
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	if err := viper.ReadInConfig(); err != nil {
