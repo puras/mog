@@ -33,7 +33,6 @@ func New() *Server {
 }
 
 func (s Server) Start(registryRouteFunc func(r *gin.Engine)) {
-	gin.SetMode(viper.GetString("runmode"))
 	r := InitRouter(registryRouteFunc)
 	logrus.Infof("Start to listening on address: %s", s.Address)
 	logrus.Info(http.ListenAndServe(s.Address, r).Error())

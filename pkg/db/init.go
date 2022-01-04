@@ -3,6 +3,10 @@ package db
 import (
 	"fmt"
 
+	"gorm.io/gorm/logger"
+
+	"gorm.io/gorm/schema"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
@@ -10,7 +14,7 @@ import (
 )
 
 /**
-* @project kuko
+* @project kudo
 * @author <a href="mailto:he@puras.cn">Puras.He</a>
 * @date 2021-08-18 22:12
  */
@@ -43,10 +47,21 @@ func initDB() {
 		true,
 		"Local",
 	)
-	fmt.Printf("", config)
+	fmt.Println(fmt.Sprintf("[DB Config] %s", config))
+
+	var infoLevel = logger.Warn
+	if viper.GetString("runmode") == "debug" {
+		infoLevel = logger.Info
+	}
 
 	var err error
-	db, err = gorm.Open(mysql.Open(config), &gorm.Config{})
+	db, err = gorm.Open(mysql.Open(config), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   viper.GetString("db.table.prefix"),
+			SingularTable: viper.GetBool("db.table.singular"),
+		},
+		Logger: logger.Default.LogMode(infoLevel),
+	})
 	if err != nil {
 		logrus.Fatalf("Connecting data store failed: %v", err)
 	}

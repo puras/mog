@@ -30,7 +30,8 @@ func MakeDir(dir string) error {
 		return err
 	}
 	if exist {
-		fmt.Printf("has dir![%v]\n", dir)
+		//fmt.Printf("has dir![%v]\n", dir)
+		return nil
 	}
 	err = os.MkdirAll(dir, os.ModePerm)
 	if err != nil {

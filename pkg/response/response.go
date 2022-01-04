@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"mooko.net/mog/pkg/errcode"
+	"mooko.net/mog/pkg/errdef"
+
 	"mooko.net/mog/pkg/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 /**
@@ -39,7 +41,7 @@ func (r *Response) SetRequestId(requestId string) {
 func GetRequestId(c *gin.Context) string {
 	requestId := c.Request.Header.Get("X-Request-Id")
 	if requestId == "" {
-		requestId = util.GenUUID4()
+		requestId = util.GenShortUUID()
 	}
 	return requestId
 }
@@ -49,7 +51,12 @@ func RespOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func RespByErrCode(c *gin.Context, err errcode.ErrCode) {
+func RespErrCode(c *gin.Context, err errdef.ErrCode) {
+	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
+	c.JSON(http.StatusBadRequest, resp)
+}
+
+func RespErr(c *gin.Context, err errdef.Error) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
