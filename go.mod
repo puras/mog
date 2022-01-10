@@ -1,4 +1,4 @@
-module mooko.net/mog
+module github.com/puras/mog
 
 go 1.17
 
