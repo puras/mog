@@ -3,9 +3,9 @@ package util
 import (
 	"encoding/base64"
 	"fmt"
-	"mooko.net/mog/constants"
-	"mooko.net/mog/ctype"
-	errdef2 "mooko.net/mog/errdef"
+	"github.com/puras/mog/constants"
+	"github.com/puras/mog/ctype"
+	errdef2 "github.com/puras/mog/errdef"
 	"strings"
 	"time"
 )

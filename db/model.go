@@ -1,8 +1,8 @@
 package db
 
 import (
-	"mooko.net/mog/ctype"
-	"mooko.net/mog/util"
+	"github.com/puras/mog/ctype"
+	"github.com/puras/mog/util"
 	"time"
 )
 

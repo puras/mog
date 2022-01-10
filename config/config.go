@@ -1,7 +1,7 @@
 package config
 
 import (
-	"mooko.net/mog/util"
+	"github.com/puras/mog/util"
 	"os"
 	"path/filepath"
 	"strings"

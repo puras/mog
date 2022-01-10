@@ -2,9 +2,9 @@ package ctrl
 
 import (
 	"github.com/gin-gonic/gin"
+	errdef2 "github.com/puras/mog/errdef"
+	"github.com/puras/mog/response"
 	"github.com/sirupsen/logrus"
-	errdef2 "mooko.net/mog/errdef"
-	"mooko.net/mog/response"
 )
 
 /**

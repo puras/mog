@@ -1,7 +1,7 @@
 package validators
 
 import (
-	"mooko.net/mog/ctype"
+	"github.com/puras/mog/ctype"
 	"reflect"
 )
 

@@ -1,8 +1,8 @@
 package server
 
 import (
-	"mooko.net/mog/middleware"
-	"mooko.net/mog/validators"
+	"github.com/puras/mog/middleware"
+	"github.com/puras/mog/validators"
 	"net/http"
 
 	"github.com/spf13/viper"

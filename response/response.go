@@ -1,8 +1,8 @@
 package response
 
 import (
-	errdef2 "mooko.net/mog/errdef"
-	"mooko.net/mog/util"
+	errdef2 "github.com/puras/mog/errdef"
+	"github.com/puras/mog/util"
 	"net/http"
 	"time"
 
