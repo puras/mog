@@ -1,7 +1,7 @@
 package response
 
 import (
-	errdef2 "github.com/puras/mog/errdef"
+	"github.com/puras/mog/errdef"
 	"github.com/puras/mog/util"
 	"net/http"
 	"time"
@@ -49,12 +49,12 @@ func RespOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func RespErrCode(c *gin.Context, err errdef2.ErrCode) {
+func RespErrCode(c *gin.Context, err errdef.ErrCode) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
 
-func RespErr(c *gin.Context, err errdef2.Error) {
+func RespErr(c *gin.Context, err errdef.Error) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
