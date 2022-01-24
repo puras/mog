@@ -69,6 +69,6 @@ func RespError(c *gin.Context, err error) {
 		RespErr(c, e)
 	} else {
 		logrus.Info("no")
-		RespFail(c, ServerException.Code, err.Error())
+		RespFail(c, ErrServerException.Code, err.Error())
 	}
 }
