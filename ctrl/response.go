@@ -2,7 +2,7 @@ package ctrl
 
 import (
 	"github.com/gin-gonic/gin"
-	errdef2 "github.com/puras/mog/errdef"
+	"github.com/puras/mog/errdef"
 	"github.com/puras/mog/response"
 	"github.com/sirupsen/logrus"
 )
@@ -15,11 +15,11 @@ import (
  */
 
 func RespError(c *gin.Context, err error) {
-	if e, ok := err.(errdef2.Error); ok {
+	if e, ok := err.(errdef.Error); ok {
 		logrus.Info("yes")
 		response.RespErr(c, e)
 	} else {
 		logrus.Info("no")
-		response.RespFail(c, errdef2.ServerException.Code, err.Error())
+		response.RespFail(c, errdef.ServerException.Code, err.Error())
 	}
 }
