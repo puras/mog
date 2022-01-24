@@ -58,7 +58,7 @@ type JwtMiddleware struct {
 
 var (
 	ErrMissingSecretKey         = errors.New("secret key is required")
-	ErrForbidden                = errors.New("you don't have permission to access this resource")
+	ErrAuthForbidden            = errors.New("you don't have permission to access this resource")
 	ErrMissingAuthenticatorFunc = errors.New("JWTMiddleware.Authenticator func is undefined")
 	ErrMissingLoginValues       = errors.New("missing Username or Password")
 	ErrFailedAuthentication     = errors.New("incorrect Username or Password")
@@ -205,7 +205,7 @@ func (m *JwtMiddleware) middlewareImpl(c *gin.Context) {
 	}
 
 	if !m.Authorizator(identity, c) {
-		m.unauthorized(c, http.StatusForbidden, m.HTTPStatusMessageFunc(ErrForbidden, c))
+		m.unauthorized(c, http.StatusForbidden, m.HTTPStatusMessageFunc(ErrAuthForbidden, c))
 		return
 	}
 	c.Next()
