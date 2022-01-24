@@ -113,3 +113,51 @@ func WithConditions(db **gorm.DB, conditions Conditions) error {
 	}
 	return nil
 }
+
+func WithOrConditions(db **gorm.DB, conditions Conditions) error {
+	if !conditions.IsZero() {
+		for _, v := range conditions {
+			switch strings.ToLower(v.Operator) {
+			case OPERATOR_LIKE:
+				*db = (*db).Or(fmt.Sprintf("%s LIKE ?", v.Field), "%"+fmt.Sprintf("%v", v.Value)+"%")
+			case OPERATOR_NOT_LIKE:
+				*db = (*db).Or(fmt.Sprintf("%s NOT LIKE ?", v.Field), "%"+fmt.Sprintf("%v", v.Value)+"%")
+			case OPERATOR_EQUAL: // =
+				*db = (*db).Or(fmt.Sprintf("%s=?", v.Field), v.Value)
+			case OPERATOR_NOT_EQUAL: // !=
+				*db = (*db).Or(fmt.Sprintf("%s!=?", v.Field), v.Value)
+			case OPERATOR_GREATER_THAN: // >
+				*db = (*db).Or(fmt.Sprintf("%s>?", v.Field), v.Value)
+			case OPERATOR_GREATER_THAN_OR_EAUAL: // >=
+				*db = (*db).Or(fmt.Sprintf("%s>=?", v.Field), v.Value)
+			case OPERATOR_LESS_THAN: // <
+				*db = (*db).Or(fmt.Sprintf("%s<?", v.Field), v.Value)
+			case OPERATOR_LESS_THAN_OR_EQUAL: // <=
+				*db = (*db).Or(fmt.Sprintf("%s<=?", v.Field), v.Value)
+			case OPERATOR_IN: // in
+				val, ok := v.Value.([]interface{})
+				if !ok {
+					return fmt.Errorf("condition %s must be a list", v.Field)
+				}
+				*db = (*db).Or(fmt.Sprintf("%s IN (?)", v.Field), val)
+			case OPERATOR_NOT_IN: // notin
+				val, ok := v.Value.([]interface{})
+				if !ok {
+					return fmt.Errorf("condition %s must be a list", v.Field)
+				}
+				*db = (*db).Or(fmt.Sprintf("%s NOT IN (?)", v.Field), val)
+			case OPERATOR_BETWEEN: //
+				val, ok := v.Value.([]interface{})
+				if !ok {
+					return fmt.Errorf("condition %s must be a list", v.Field)
+				}
+				if !(len(val) == 2) {
+					return fmt.Errorf("condition %s length must be 2", v.Field)
+				}
+				*db = (*db).Or(fmt.Sprintf("%s BETWEEN ? AND ?", v.Field), val[0], val[1])
+			}
+		}
+		*db = (*db).Where(*db)
+	}
+	return nil
+}
