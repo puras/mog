@@ -31,16 +31,16 @@ func GeneratePassword(password, salt string) string {
 func ParsePassword(password string) (string, error) {
 	passwdBytes, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef.New(errdef.InvalidParam)
 	}
 	passwdStr := string(passwdBytes)
 	passwdInfos := strings.Split(passwdStr, fmt.Sprintf("%s%s", constants.PasswordPrefix, constants.PasswordSep))
 	if len(passwdInfos) != 2 {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef.New(errdef.InvalidParam)
 	}
 	passwdAndTimestamp := passwdInfos[1]
 	if strings.Index(passwdAndTimestamp, constants.PasswordSep) == -1 {
-		return "", errdef.New(errdef.INVALID_PARAM)
+		return "", errdef.New(errdef.InvalidParam)
 	}
 	return passwdAndTimestamp[:strings.LastIndex(passwdAndTimestamp, constants.PasswordSep)], nil
 }
