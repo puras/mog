@@ -12,6 +12,7 @@ import (
  * @date 2021-08-26 22:49:41
  * @desc 一句话描述功能
  */
+
 type MailServer struct {
 	Host     string
 	Port     int

@@ -25,7 +25,7 @@ type Config struct {
 	Name string
 }
 
-func Init(cfg string) error {
+func InitConfig(cfg string) error {
 	c := Config{
 		Name: cfg,
 	}

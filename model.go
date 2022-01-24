@@ -10,6 +10,7 @@ import (
  * @date 2021-08-19 11:07
  * @desc
  */
+
 type Model struct {
 	ID        string `json:"id" gorm:"primary_key;unique_index;size:64"`
 	CreatedAt Time   `json:"createdAt" gorm:"column:created_at"`

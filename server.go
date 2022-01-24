@@ -15,6 +15,7 @@ import (
 * @author <a href="mailto:he@puras.cn">Puras.He</a>
 * @date 2021-08-18 20:25
  */
+
 type Server struct {
 	ServerID string
 	Address  string

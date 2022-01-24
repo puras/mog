@@ -1,6 +1,8 @@
 package mog
 
 import (
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator"
 	"reflect"
 )
 
@@ -10,6 +12,12 @@ import (
  * @date 2021-08-26 12:42
  * @desc
  */
+
+func InitCustomValid() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterCustomTypeFunc(ValidateJSONDateType, Time{})
+	}
+}
 
 func ValidateJSONDateType(field reflect.Value) interface{} {
 	if field.Type() == reflect.TypeOf(Time{}) {

@@ -13,6 +13,7 @@ import (
 * @author <a href="mailto:he@puras.cn">Puras.He</a>
 * @date 2021-08-18 21:21
  */
+
 func InitRouter(registryRouteFunc func(r *gin.Engine)) *gin.Engine {
 	var router *gin.Engine
 
