@@ -1,4 +1,4 @@
-package ctype
+package mog
 
 import (
 	"database/sql/driver"

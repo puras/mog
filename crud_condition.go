@@ -1,4 +1,4 @@
-package crud
+package mog
 
 import (
 	"fmt"

@@ -1,7 +1,6 @@
-package config
+package mog
 
 import (
-	"github.com/puras/mog/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,13 +45,13 @@ func Init(cfg string) error {
 func (c Config) initLog() {
 	logFile := viper.GetString("log.logger_file")
 	logDir := filepath.Dir(logFile)
-	err := util.MakeDir(logDir)
+	err := MakeDir(logDir)
 	if err != nil {
 		logrus.Panic("make logger file errcode.", errors.WithStack(err))
 	}
 	bizLogFile := viper.GetString("biz_log.logger_file")
 	bizLogDir := filepath.Dir(bizLogFile)
-	err = util.MakeDir(bizLogDir)
+	err = MakeDir(bizLogDir)
 	if err != nil {
 		logrus.Panic("make business logger file errcode.", errors.WithStack(err))
 	}

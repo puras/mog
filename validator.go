@@ -1,7 +1,6 @@
-package validators
+package mog
 
 import (
-	"github.com/puras/mog/ctype"
 	"reflect"
 )
 
@@ -13,8 +12,8 @@ import (
  */
 
 func ValidateJSONDateType(field reflect.Value) interface{} {
-	if field.Type() == reflect.TypeOf(ctype.Time{}) {
-		timeStr := field.Interface().(ctype.Time).String()
+	if field.Type() == reflect.TypeOf(Time{}) {
+		timeStr := field.Interface().(Time).String()
 		if timeStr == "0001-01-01 00:00:00" {
 			return nil
 		}

@@ -1,4 +1,4 @@
-package errdef
+package mog
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Error struct {
 	ErrCode
 }
 
-func New(err ErrCode) Error {
+func NewError(err ErrCode) Error {
 	return Error{err}
 }
 

@@ -1,9 +1,8 @@
-package validators
+package mog
 
 import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator"
-	"github.com/puras/mog/ctype"
 )
 
 /**
@@ -14,6 +13,6 @@ import (
  */
 func InitCustomValid() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterCustomTypeFunc(ValidateJSONDateType, ctype.Time{})
+		v.RegisterCustomTypeFunc(ValidateJSONDateType, Time{})
 	}
 }

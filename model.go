@@ -1,8 +1,6 @@
-package db
+package mog
 
 import (
-	"github.com/puras/mog/ctype"
-	"github.com/puras/mog/util"
 	"time"
 )
 
@@ -13,9 +11,9 @@ import (
  * @desc
  */
 type Model struct {
-	ID        string     `json:"id" gorm:"primary_key;unique_index;size:64"`
-	CreatedAt ctype.Time `json:"createdAt" gorm:"column:created_at"`
-	UpdatedAt ctype.Time `json:"updatedAt" gorm:"column:updated_at"`
+	ID        string `json:"id" gorm:"primary_key;unique_index;size:64"`
+	CreatedAt Time   `json:"createdAt" gorm:"column:created_at"`
+	UpdatedAt Time   `json:"updatedAt" gorm:"column:updated_at"`
 }
 
 type DefaultModel struct {
@@ -30,12 +28,12 @@ type BaseModel struct {
 }
 
 func (b *Model) DefaultCreated() {
-	var now = ctype.Time(time.Now())
+	var now = Time(time.Now())
 	b.CreatedAt = now
 	b.UpdatedAt = now
-	b.ID = util.GenShortUUID()
+	b.ID = GenShortUUID()
 }
 
 func (b *Model) DefaultUpdated() {
-	b.UpdatedAt = ctype.Time(time.Now())
+	b.UpdatedAt = Time(time.Now())
 }

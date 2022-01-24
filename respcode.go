@@ -1,4 +1,4 @@
-package response
+package mog
 
 /**
  * @project kuko

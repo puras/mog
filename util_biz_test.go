@@ -1,4 +1,4 @@
-package util
+package mog
 
 import "testing"
 

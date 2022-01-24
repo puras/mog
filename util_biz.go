@@ -1,11 +1,8 @@
-package util
+package mog
 
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/puras/mog/constants"
-	"github.com/puras/mog/ctype"
-	"github.com/puras/mog/errdef"
 	"math/rand"
 	"strings"
 	"time"
@@ -18,7 +15,7 @@ import (
  */
 
 // GenerateSalt 生成Salt
-func GenerateSalt(account string, createdAt ctype.Time) string {
+func GenerateSalt(account string, createdAt Time) string {
 	createdAtStr := time.Time(createdAt).Format("2006-01-02 15:04:05")
 	return Sha256Encrypt(fmt.Sprintf("%s-%s", account, createdAtStr))
 }
@@ -32,18 +29,18 @@ func GeneratePassword(password, salt string) string {
 func ParsePassword(password string) (string, error) {
 	passwdBytes, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
-		return "", errdef.New(errdef.InvalidParam)
+		return "", New(InvalidParam)
 	}
 	passwdStr := string(passwdBytes)
-	passwdInfos := strings.Split(passwdStr, fmt.Sprintf("%s%s", constants.PasswordPrefix, constants.PasswordSep))
+	passwdInfos := strings.Split(passwdStr, fmt.Sprintf("%s%s", PasswordPrefix, PasswordSep))
 	if len(passwdInfos) != 2 {
-		return "", errdef.New(errdef.InvalidParam)
+		return "", New(InvalidParam)
 	}
 	passwdAndTimestamp := passwdInfos[1]
-	if strings.Index(passwdAndTimestamp, constants.PasswordSep) == -1 {
-		return "", errdef.New(errdef.InvalidParam)
+	if strings.Index(passwdAndTimestamp, PasswordSep) == -1 {
+		return "", New(InvalidParam)
 	}
-	return passwdAndTimestamp[:strings.LastIndex(passwdAndTimestamp, constants.PasswordSep)], nil
+	return passwdAndTimestamp[:strings.LastIndex(passwdAndTimestamp, PasswordSep)], nil
 }
 
 func GetRandomString(l int) string {

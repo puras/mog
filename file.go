@@ -1,4 +1,4 @@
-package util
+package mog
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 * @author <a href="mailto:he@puras.cn">Puras.He</a>
 * @date 2021-08-18 21:43
  */
+
 // PathExists 判断文件夹是否存在
 func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)

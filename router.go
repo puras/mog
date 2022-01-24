@@ -1,8 +1,6 @@
-package server
+package mog
 
 import (
-	"github.com/puras/mog/middleware"
-	"github.com/puras/mog/validators"
 	"net/http"
 
 	"github.com/spf13/viper"
@@ -27,9 +25,9 @@ func InitRouter(registryRouteFunc func(r *gin.Engine)) *gin.Engine {
 	}
 	router = gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(middleware.Logging())
+	router.Use(Logging())
 
-	validators.InitCustomValid()
+	InitCustomValid()
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

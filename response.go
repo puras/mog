@@ -1,8 +1,7 @@
-package response
+package mog
 
 import (
-	"github.com/puras/mog/errdef"
-	"github.com/puras/mog/util"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
@@ -39,7 +38,7 @@ func (r *Response) SetRequestId(requestId string) {
 func GetRequestId(c *gin.Context) string {
 	requestId := c.Request.Header.Get("X-Request-Id")
 	if requestId == "" {
-		requestId = util.GenShortUUID()
+		requestId = GenShortUUID()
 	}
 	return requestId
 }
@@ -49,12 +48,12 @@ func RespOk(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func RespErrCode(c *gin.Context, err errdef.ErrCode) {
+func RespErrCode(c *gin.Context, err ErrCode) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
 
-func RespErr(c *gin.Context, err errdef.Error) {
+func RespErr(c *gin.Context, err Error) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
 }
@@ -62,4 +61,14 @@ func RespErr(c *gin.Context, err errdef.Error) {
 func RespFail(c *gin.Context, code string, message string) {
 	resp := Response{Code: code, RequestId: GetRequestId(c), Message: message}
 	c.JSON(http.StatusBadRequest, resp)
+}
+
+func RespError(c *gin.Context, err error) {
+	if e, ok := err.(Error); ok {
+		logrus.Info("yes")
+		RespErr(c, e)
+	} else {
+		logrus.Info("no")
+		RespFail(c, ServerException.Code, err.Error())
+	}
 }

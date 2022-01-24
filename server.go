@@ -1,4 +1,4 @@
-package server
+package mog
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ func (s Server) String() string {
 	return fmt.Sprintf("ServerID: %s, Address: %s", s.ServerID, s.Address)
 }
 
-func New() *Server {
+func NewServer() *Server {
 	ID := fmt.Sprintf("%s-%s-%d", viper.GetString("registry.registry_name"), strings.Replace(viper.GetString("registry.register_address"), ".", "-", -1), viper.GetInt("registry.health_check_port"))
 	return &Server{
 		ServerID: ID,

@@ -1,11 +1,10 @@
-package util
+package mog
 
 import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/puras/mog/constants"
 	"reflect"
 	"strings"
 
@@ -37,7 +36,7 @@ func IdShortString(id string, len int) string {
 }
 
 func GenInfoCode(prefix string, infoType string, id string) string {
-	ret := fmt.Sprintf("%s%s-%s", prefix, infoType, IdShortString(id, constants.ShortIdLen))
+	ret := fmt.Sprintf("%s%s-%s", prefix, infoType, IdShortString(id, ShortIdLen))
 	return strings.ToUpper(ret)
 }
 

@@ -1,4 +1,4 @@
-package constants
+package mog
 
 /**
  * @project momo-backend
