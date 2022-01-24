@@ -31,6 +31,15 @@ type MailInfo struct {
 	Attachs     []string
 }
 
+func DefaultMailServer() MailServer {
+	return MailServer{
+		Host:     "",
+		Port:     0,
+		Username: "",
+		Password: "",
+	}
+}
+
 func SendMail(server MailServer, info MailInfo) error {
 	m := gomail.NewMessage()
 	if info.FromMail == "" {

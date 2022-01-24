@@ -6,6 +6,7 @@ import (
 	"github.com/puras/mog/constants"
 	"github.com/puras/mog/ctype"
 	"github.com/puras/mog/errdef"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -43,4 +44,15 @@ func ParsePassword(password string) (string, error) {
 		return "", errdef.New(errdef.InvalidParam)
 	}
 	return passwdAndTimestamp[:strings.LastIndex(passwdAndTimestamp, constants.PasswordSep)], nil
+}
+
+func GetRandomString(l int) string {
+	str := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < l; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
 }

@@ -24,6 +24,7 @@ var DataNotEditable = ErrCode{"DataNotEditable", "数据不可编辑"}
 var DataCheckFailure = ErrCode{"DataCheckFailure", "数据检查失败"}
 var DataIsRelation = ErrCode{"DataIsRelation", "数据被引用"}
 var DataParseFailure = ErrCode{"DataParseFailure", "数据解析失败"}
+var DataOperateFailure = ErrCode{"DataOperateFailure", "数据操作失败"}
 var DataEncodeFailure = ErrCode{"DataEncodeFailure", "数据编码失败"}
 var DataDecodeFailure = ErrCode{"DataDecodeFailure", "数据解码失败"}
 var BusinessError = ErrCode{"BusinessError", "业务逻辑错误"}

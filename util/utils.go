@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/puras/mog/constants"
+	"reflect"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
@@ -44,4 +45,12 @@ func Sha256Encrypt(info string) string {
 	h := sha256.New()
 	h.Write([]byte(info))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func IsNil(i interface{}) bool {
+	defer func() {
+		recover()
+	}()
+	vi := reflect.ValueOf(i)
+	return vi.IsNil()
 }
