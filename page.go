@@ -18,18 +18,28 @@ type Page struct {
 	Total int64       `json:"total"`
 }
 
-const DEFAULT_PAGE_SIZE = "20"
+const DEFAULT_PAGE = 1
+const DEFAULT_PAGE_SIZE = 20
 
-func GetPageParam(c *gin.Context) (int, int, error) {
-	var num = c.DefaultQuery("pageNum", "1")
-	var size = c.DefaultQuery("pageSize", DEFAULT_PAGE_SIZE)
+func GetPageParam(c *gin.Context) (int, int) {
+	var num = c.DefaultQuery("pageNum", strconv.Itoa(DEFAULT_PAGE))
+	var size = c.DefaultQuery("pageSize", strconv.Itoa(DEFAULT_PAGE_SIZE))
 	pageNum, err := strconv.Atoi(num)
 	if err != nil {
-		return 0, 0, err
+		// return 0, 0, err
+		pageNum = DEFAULT_PAGE
 	}
 	pageSize, err := strconv.Atoi(size)
 	if err != nil {
-		return 0, 0, err
+		// return 0, 0, err
+		pageSize = DEFAULT_PAGE_SIZE
 	}
-	return pageNum, pageSize, nil
+	return pageNum, pageSize
+}
+
+func GetPageOffset(num, size int) int {
+	if num < 1 {
+		num = 1
+	}
+	return (num - 1) * size
 }
