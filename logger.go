@@ -3,6 +3,7 @@ package mog
 import (
 	"bytes"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,16 +30,21 @@ func Logging() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 
+		ct := c.Request.Header.Get("Content-Type")
+		isForm := strings.HasPrefix(ct, "multipart/form-data")
+
 		var bodyBytes []byte
-		if c.Request.Body != nil {
-			bodyBytes, _ = ioutil.ReadAll(c.Request.Body)
-		}
+		if !isForm {
+			if c.Request.Body != nil {
+				bodyBytes, _ = ioutil.ReadAll(c.Request.Body)
+			}
 
-		if string(bodyBytes) == "" {
-			bodyBytes = []byte("{}")
-		}
+			if string(bodyBytes) == "" {
+				bodyBytes = []byte("{}")
+			}
 
-		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		}
 
 		blw := &bodyLogWriter{
 			ResponseWriter: c.Writer,
