@@ -14,9 +14,9 @@ import (
  * @desc
  */
 type Condition struct {
-	Field    string      `json:"field"`
-	Operator string      `json:"operator"`
-	Value    interface{} `json:"value"`
+	Field    string `json:"field"`
+	Operator string `json:"operator"`
+	Value    any    `json:"value"`
 }
 
 type Conditions []Condition
@@ -29,11 +29,11 @@ func (c Conditions) IsZero() bool {
 	return len(Conditions{}) > 0
 }
 
-func NewEqualsCondition(field string, value interface{}) Condition {
+func NewEqualsCondition(field string, value any) Condition {
 	return NewCondition(field, OPERATOR_EQUAL, value)
 }
 
-func NewCondition(field, operator string, value interface{}) Condition {
+func NewCondition(field, operator string, value any) Condition {
 	return Condition{
 		Field:    field,
 		Operator: operator,
@@ -41,11 +41,11 @@ func NewCondition(field, operator string, value interface{}) Condition {
 	}
 }
 
-func SingleEqualsConditions(field string, value interface{}) Conditions {
+func SingleEqualsConditions(field string, value any) Conditions {
 	return SingleConditions(field, OPERATOR_EQUAL, value)
 }
 
-func SingleConditions(field, operator string, value interface{}) Conditions {
+func SingleConditions(field, operator string, value any) Conditions {
 	return Conditions{
 		Condition{
 			Field:    field,
@@ -88,19 +88,19 @@ func WithConditions(db **gorm.DB, conditions Conditions) error {
 			case OPERATOR_LESS_THAN_OR_EQUAL: // <=
 				*db = (*db).Where(fmt.Sprintf("%s<=?", v.Field), v.Value)
 			case OPERATOR_IN: // in
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}
 				*db = (*db).Where(fmt.Sprintf("%s IN (?)", v.Field), val)
 			case OPERATOR_NOT_IN: // notin
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}
 				*db = (*db).Where(fmt.Sprintf("%s NOT IN (?)", v.Field), val)
 			case OPERATOR_BETWEEN: //
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}
@@ -135,19 +135,19 @@ func WithOrConditions(db **gorm.DB, conditions Conditions) error {
 			case OPERATOR_LESS_THAN_OR_EQUAL: // <=
 				*db = (*db).Or(fmt.Sprintf("%s<=?", v.Field), v.Value)
 			case OPERATOR_IN: // in
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}
 				*db = (*db).Or(fmt.Sprintf("%s IN (?)", v.Field), val)
 			case OPERATOR_NOT_IN: // notin
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}
 				*db = (*db).Or(fmt.Sprintf("%s NOT IN (?)", v.Field), val)
 			case OPERATOR_BETWEEN: //
-				val, ok := v.Value.([]interface{})
+				val, ok := v.Value.([]any)
 				if !ok {
 					return fmt.Errorf("condition %s must be a list", v.Field)
 				}

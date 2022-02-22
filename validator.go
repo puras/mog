@@ -19,7 +19,7 @@ func InitCustomValid() {
 	}
 }
 
-func ValidateJSONDateType(field reflect.Value) interface{} {
+func ValidateJSONDateType(field reflect.Value) any {
 	if field.Type() == reflect.TypeOf(Time{}) {
 		timeStr := field.Interface().(Time).String()
 		if timeStr == "0001-01-01 00:00:00" {

@@ -47,7 +47,7 @@ func Sha256Encrypt(info string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func IsNil(i interface{}) bool {
+func IsNil(i any) bool {
 	defer func() {
 		recover()
 	}()

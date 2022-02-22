@@ -46,7 +46,7 @@ func (t Time) Value() (driver.Value, error) {
 	return []byte(time.Time(t).Format(TimeFormat)), nil
 }
 
-func (t *Time) Scan(v interface{}) error {
+func (t *Time) Scan(v any) error {
 	time, _ := time.Parse("2006-01-02 15:04:05 +0800 CST", v.(time.Time).String())
 	*t = Time(time)
 	return nil

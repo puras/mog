@@ -18,7 +18,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type MapClaims map[string]interface{}
+type MapClaims map[string]any
 
 type JwtMiddleware struct {
 	Realm                 string
@@ -26,14 +26,14 @@ type JwtMiddleware struct {
 	Key                   []byte
 	Timeout               time.Duration
 	MaxRefresh            time.Duration
-	Authenticator         func(c *gin.Context) (interface{}, error)
-	Authorizator          func(data interface{}, c *gin.Context) bool
-	PayloadFunc           func(data interface{}) MapClaims
+	Authenticator         func(c *gin.Context) (any, error)
+	Authorizator          func(data any, c *gin.Context) bool
+	PayloadFunc           func(data any) MapClaims
 	Unauthorized          func(c *gin.Context, code int, message string)
 	LoginResponse         func(c *gin.Context, code int, message string, time time.Time)
 	LogoutResponse        func(c *gin.Context, code int)
 	RefreshResponse       func(c *gin.Context, code int, message string, time time.Time)
-	IdentityHandler       func(c *gin.Context) interface{}
+	IdentityHandler       func(c *gin.Context) any
 	IdentityKey           string
 	TokenLookup           string
 	TokenHeadName         string
@@ -104,7 +104,7 @@ func (m *JwtMiddleware) MiddlewareInit() error {
 		m.TokenHeadName = "Bearer"
 	}
 	if m.Authorizator == nil {
-		m.Authorizator = func(data interface{}, c *gin.Context) bool {
+		m.Authorizator = func(data any, c *gin.Context) bool {
 			return true
 		}
 	}
@@ -145,7 +145,7 @@ func (m *JwtMiddleware) MiddlewareInit() error {
 		m.IdentityKey = IdentityKey
 	}
 	if m.IdentityHandler == nil {
-		m.IdentityHandler = func(c *gin.Context) interface{} {
+		m.IdentityHandler = func(c *gin.Context) any {
 			claims := ExtractClaims(c)
 			return claims[m.IdentityKey]
 		}
@@ -365,7 +365,7 @@ func (m *JwtMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, error
 	return claims, nil
 }
 
-func (m *JwtMiddleware) TokenGenerator(data interface{}) (string, time.Time, error) {
+func (m *JwtMiddleware) TokenGenerator(data any) (string, time.Time, error) {
 	token := jwt.New(jwt.GetSigningMethod(m.SigningAlgorithm))
 	claims := token.Claims.(jwt.MapClaims)
 
@@ -411,7 +411,7 @@ func (m *JwtMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	return jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if jwt.GetSigningMethod(m.SigningAlgorithm) != t.Method {
 			return nil, ErrInvalidSigningAlgorithm
 		}
@@ -424,7 +424,7 @@ func (m *JwtMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 }
 
 func (m *JwtMiddleware) ParseTokenString(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	return jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if jwt.GetSigningMethod(m.SigningAlgorithm) != t.Method {
 			return nil, ErrInvalidSigningAlgorithm
 		}

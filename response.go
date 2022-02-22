@@ -16,14 +16,14 @@ import (
  */
 
 type Response struct {
-	Code      string      `json:"code"`
-	RequestId string      `json:"requestId"`
-	Timestamp int64       `json:"timestamp"`
-	Data      interface{} `json:"data"`
-	Message   string      `json:"message"`
+	Code      string `json:"code"`
+	RequestId string `json:"requestId"`
+	Timestamp int64  `json:"timestamp"`
+	Data      any    `json:"data"`
+	Message   string `json:"message"`
 }
 
-func (r *Response) SetData(data interface{}) {
+func (r *Response) SetData(data any) {
 	r.Data = data
 }
 
@@ -43,7 +43,7 @@ func GetRequestId(c *gin.Context) string {
 	return requestId
 }
 
-func RespOk(c *gin.Context, data interface{}) {
+func RespOk(c *gin.Context, data any) {
 	resp := Response{Code: SUCCESS, RequestId: GetRequestId(c), Data: data, Timestamp: time.Now().Unix()}
 	c.JSON(http.StatusOK, resp)
 }
