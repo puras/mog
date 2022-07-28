@@ -22,8 +22,8 @@ const DEFAULT_PAGE = 1
 const DEFAULT_PAGE_SIZE = 20
 
 func GetPageParam(c *gin.Context) (int, int) {
-	var num = c.DefaultQuery("pageNum", strconv.Itoa(DEFAULT_PAGE))
-	var size = c.DefaultQuery("pageSize", strconv.Itoa(DEFAULT_PAGE_SIZE))
+	var num = c.DefaultQuery("page_num", strconv.Itoa(DEFAULT_PAGE))
+	var size = c.DefaultQuery("page_size", strconv.Itoa(DEFAULT_PAGE_SIZE))
 	pageNum, err := strconv.Atoi(num)
 	if err != nil {
 		// return 0, 0, err

@@ -18,3 +18,28 @@ func NoDelete(db **gorm.DB) {
 func DoDelete(db **gorm.DB) {
 	(*db).Update("deleted", true)
 }
+
+type CRUD interface {
+	DoDelete(db **gorm.DB) CRUD
+	NoDelete(db **gorm.DB) CRUD
+}
+
+func NewCRUD() CRUD {
+	return &crud{}
+}
+
+func Offset(pageNum, pageSize int) int {
+	return (pageNum - 1) * pageSize
+}
+
+type crud struct{}
+
+func (self crud) DoDelete(db **gorm.DB) CRUD {
+	DoDelete(db)
+	return self
+}
+
+func (self crud) NoDelete(db **gorm.DB) CRUD {
+	NoDelete(db)
+	return self
+}
