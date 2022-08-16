@@ -1,6 +1,7 @@
 package mog
 
 import (
+	"github.com/gin-gonic/gin/render"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -48,8 +49,8 @@ func RespOk(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func RespText(c *gin.Context, data any) {
-	c.JSON(http.StatusOK, data)
+func RespPlainOk(c *gin.Context, data string) {
+	c.Render(http.StatusOK, render.String{Format: data})
 }
 
 func RespErrCode(c *gin.Context, err ErrCode) {
