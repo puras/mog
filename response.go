@@ -48,6 +48,10 @@ func RespOk(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, resp)
 }
 
+func RespText(c *gin.Context, data any) {
+	c.JSON(http.StatusOK, data)
+}
+
 func RespErrCode(c *gin.Context, err ErrCode) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
