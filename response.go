@@ -53,6 +53,10 @@ func RespPlainOk(c *gin.Context, data string) {
 	c.Render(http.StatusOK, render.String{Format: data})
 }
 
+func RespXmlOk(c *gin.Context, data any) {
+	c.XML(http.StatusOK, data)
+}
+
 func RespErrCode(c *gin.Context, err ErrCode) {
 	resp := Response{RequestId: GetRequestId(c), Code: err.Code, Message: err.Message}
 	c.JSON(http.StatusBadRequest, resp)
