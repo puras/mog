@@ -6,7 +6,6 @@ import (
 	"github.com/puras/mog/errors"
 	"github.com/puras/mog/logger"
 	"net/http"
-	"reflect"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +24,18 @@ type ResponseResult struct {
 	Code    string `json:"code"`
 	Data    any    `json:"data,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+type PageResult struct {
+	Items any   `json:"items"`
+	Total int64 `json:"total"`
+}
+
+func FromPaginationResult(pr *dbx.PaginationResult) *PageResult {
+	return &PageResult{
+		Items: pr.Items,
+		Total: pr.Total,
+	}
 }
 
 func GetBodyData(c *gin.Context) []byte {
@@ -79,20 +90,20 @@ func ResOk(c *gin.Context) {
 	ResJson(c, http.StatusOK, NewResponseResult(Success, "", nil))
 }
 
-func ResPage(c *gin.Context, pr *dbx.PageResult) {
+func ResPage(c *gin.Context, pr *PageResult) {
 	ResSuccess(c, pr)
 }
 
-func ResPagination(c *gin.Context, v any, total int64) {
-	reflectValue := reflect.Indirect(reflect.ValueOf(v))
-	if reflectValue.IsNil() {
-		v = make([]any, 0)
-	}
-	ResSuccess(c, dbx.PageResult{
-		Items: v,
-		Total: total,
-	})
-}
+//func ResPagination(c *gin.Context, v any, total int64) {
+//	reflectValue := reflect.Indirect(reflect.ValueOf(v))
+//	if reflectValue.IsNil() {
+//		v = make([]any, 0)
+//	}
+//	ResSuccess(c, PageResult{
+//		Items: v,
+//		Total: total,
+//	})
+//}
 
 func ResError(c *gin.Context, err error, status ...int) {
 	ctx := c.Request.Context()

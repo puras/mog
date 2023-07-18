@@ -9,14 +9,10 @@ import (
 )
 
 type PaginationResult struct {
+	Items    any   `json:"items"`
 	Total    int64 `json:"total"`
 	PageNum  int   `json:"pageNum"`
 	PageSize int   `json:"pageSize"`
-}
-
-type PageResult struct {
-	Items any   `json:"items"`
-	Total int64 `json:"total"`
 }
 
 type PaginationParam struct {
@@ -114,6 +110,7 @@ func WrapPageQuery(ctx context.Context, db *gorm.DB, pp PaginationParam, opts Qu
 		return nil, err
 	}
 	return &PaginationResult{
+		Items:    out,
 		Total:    total,
 		PageNum:  pp.PageNum,
 		PageSize: pp.PageSize,
