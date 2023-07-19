@@ -7,10 +7,12 @@ import (
 )
 
 type (
-	traceIdCtx struct{}
-	transCtx   struct{}
-	rowLockCtx struct{}
-	userIdCtx  struct{}
+	traceIdCtx   struct{}
+	transCtx     struct{}
+	rowLockCtx   struct{}
+	userIdCtx    struct{}
+	userTokenCtx struct{}
+	userCacheCtx struct{}
 )
 
 func NewTraceId(ctx context.Context, traceId string) context.Context {
@@ -52,6 +54,18 @@ func NewUserId(ctx context.Context, userId string) context.Context {
 
 func FromUserId(ctx context.Context) string {
 	v := ctx.Value(userIdCtx{})
+	if v != nil {
+		return v.(string)
+	}
+	return ""
+}
+
+func NewUserToken(ctx context.Context, userToken string) context.Context {
+	return context.WithValue(ctx, userTokenCtx{}, userToken)
+}
+
+func FromUserToken(ctx context.Context) string {
+	v := ctx.Value(userTokenCtx{})
 	if v != nil {
 		return v.(string)
 	}

@@ -9,7 +9,7 @@ import (
 
 type Injector struct {
 	DB   *gorm.DB
-	Auth jwtx.Auther
+	Auth jwtx.Auth
 }
 
 func InitSet() wire.ProviderSet {

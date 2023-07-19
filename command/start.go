@@ -69,6 +69,11 @@ func StartCmd(params server.ServerParam) *cli.Command {
 					zap.Bool("daemon", daemon),
 					zap.Int("pid", os.Getpid()),
 				)
+
+				if err := params.Init(ctx); err != nil {
+					return nil, err
+				}
+
 				startClean, err := server.Start(ctx, params.GetInjector(ctx), params.RegistryRoutes, params.ParseCurrentUser)
 				if err != nil {
 					return nil, err
