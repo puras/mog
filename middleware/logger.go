@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"github.com/puras/mog/logger"
-	"github.com/puras/mog/utils"
 	"github.com/puras/mog/web"
 	"mime"
 	"net/http"
@@ -31,7 +30,7 @@ func Logger() gin.HandlerFunc {
 
 func LoggerWithConfig(config LoggerConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if utils.SkippedPathPrefixes(c, config.SkippedPathPrefixes...) {
+		if SkippedPathPrefixes(c, config.SkippedPathPrefixes...) {
 			c.Next()
 			return
 		}
@@ -66,8 +65,6 @@ func LoggerWithConfig(config LoggerConfig) gin.HandlerFunc {
 			}
 		}
 
-		traceId := c.Writer.Header().Get(DefaultTraceConfig.RequestHeaderKey)
-
 		cost := time.Since(start).Nanoseconds() / 1e6
 		fields = append(fields, zap.Int64("cost", cost))
 		fields = append(fields, zap.Int("status", c.Writer.Status()))
@@ -81,7 +78,7 @@ func LoggerWithConfig(config LoggerConfig) gin.HandlerFunc {
 		}
 		ctx := c.Request.Context()
 		ctx = logger.NewTag(ctx, logger.TagKeyRequest)
-		logger.Context(ctx).Info(fmt.Sprintf("[Trace] %s [HTTP] %s-%s-%d (%dms)",
-			traceId, c.Request.URL.Path, c.Request.Method, c.Writer.Status(), cost), fields...)
+		logger.Context(ctx).Info(fmt.Sprintf("[HTTP] %s-%s-%d (%dms)",
+			c.Request.URL.Path, c.Request.Method, c.Writer.Status(), cost), fields...)
 	}
 }

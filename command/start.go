@@ -12,11 +12,9 @@ import (
 	"path/filepath"
 
 	"go.uber.org/zap"
-
-	"github.com/gin-gonic/gin"
 )
 
-func StartCmd(registryRoutes func(ctx context.Context, e *gin.Engine) error) *cli.Command {
+func StartCmd(params server.ServerParam) *cli.Command {
 	return &cli.Command{
 		Name:  "start",
 		Usage: "Start Server",
@@ -71,7 +69,7 @@ func StartCmd(registryRoutes func(ctx context.Context, e *gin.Engine) error) *cl
 					zap.Bool("daemon", daemon),
 					zap.Int("pid", os.Getpid()),
 				)
-				startClean, err := server.Start(ctx, registryRoutes)
+				startClean, err := server.Start(ctx, params.GetInjector(ctx), params.RegistryRoutes, params.ParseCurrentUser)
 				if err != nil {
 					return nil, err
 				}

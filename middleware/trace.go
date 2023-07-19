@@ -2,10 +2,8 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/puras/mog/logger"
-	"github.com/puras/mog/utils"
-
 	"github.com/gin-gonic/gin"
+	"github.com/puras/mog/logger"
 	"github.com/rs/xid"
 )
 
@@ -27,7 +25,7 @@ func Trace() gin.HandlerFunc {
 
 func TraceWithConfig(config TraceConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if utils.SkippedPathPrefixes(c, config.SkippedPathPrefixes...) {
+		if SkippedPathPrefixes(c, config.SkippedPathPrefixes...) {
 			c.Next()
 			return
 		}

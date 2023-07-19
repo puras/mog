@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/puras/mog/config"
 	"github.com/puras/mog/errors"
+	"github.com/puras/mog/inject"
 	"github.com/puras/mog/logger"
 	"github.com/puras/mog/middleware"
 	"github.com/puras/mog/web"
@@ -49,10 +50,10 @@ EXIT:
 	return nil
 }
 
-func Start(ctx context.Context, registryRoutes func(ctx context.Context, e *gin.Engine) error) (func(), error) {
+func Start(ctx context.Context, injector *inject.Injector, registryRoutes func(ctx context.Context, e *gin.Engine) error, parseCurrentUser func(c *gin.Context) (string, error)) (func(), error) {
 	logger.Context(ctx).Info("Start...")
 
-	clean, err := startHTTPServer(ctx, registryRoutes)
+	clean, err := startHTTPServer(ctx, registryRoutes, parseCurrentUser)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +65,7 @@ func Start(ctx context.Context, registryRoutes func(ctx context.Context, e *gin.
 	}, nil
 }
 
-func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Context, e *gin.Engine) error) (func(), error) {
+func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Context, e *gin.Engine) error, parseCurrentUser func(c *gin.Context) (string, error)) (func(), error) {
 	gin.SetMode(gin.DebugMode)
 
 	e := gin.New()
@@ -73,6 +74,11 @@ func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Contex
 	e.Use(middleware.Recovery())
 	e.Use(middleware.Trace())
 	e.Use(middleware.Logger())
+	e.Use(middleware.AuthWithConfig(middleware.AuthConfig{
+		AllowedPathPrefixes: []string{"/api/v1"},
+		SkippedPathPrefixes: config.C.Middleware.Auth.SkippedPathPrefixes,
+		ParseUser:           parseCurrentUser,
+	}))
 
 	e.GET("/health", func(c *gin.Context) {
 		web.ResOk(c)

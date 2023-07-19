@@ -151,6 +151,26 @@ type Middleware struct {
 			}
 		}
 	}
+	Auth struct {
+		Disable             bool
+		SkippedPathPrefixes []string
+		SigningMethod       string `default:"HS512"` // HS256/HS384/HS512
+		SigningKey          string `default:"cptbtptpbcptdtptp"`
+		Expired             int    `default:"86400"`
+		Store               struct {
+			Type      string `default:"badger"` // badger/redis
+			Delimiter string `default:":"`      // delimiter for key
+			Badger    struct {
+				Path string `default:"data/auth"`
+			}
+			Redis struct {
+				Addr     string
+				Username string
+				Password string
+				DB       int
+			}
+		}
+	}
 }
 
 func (c *Config) IsDebug() bool {
