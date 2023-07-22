@@ -50,6 +50,10 @@ func InitAuth(ctx context.Context) (Auth, func(), error) {
 		cache = cachex.NewBadgerCache(cachex.BadgerConfig{
 			Path: cfg.Store.Badger.Path,
 		}, cachex.WithDelimiter(cfg.Store.Delimiter))
+	default:
+		cache = cachex.NewMemoryCache(cachex.MemoryConfig{
+			CleanupInterval: time.Second * time.Duration(config.C.Storage.Cache.Memory.CleanupInterval),
+		}, cachex.WithDelimiter(cfg.Store.Delimiter))
 	}
 
 	auth := New(NewStoreWithCache(cache), opts...)

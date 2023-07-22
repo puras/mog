@@ -22,9 +22,9 @@ func MustLoad(name string) {
 		if err = tree.Unmarshal(C); err != nil {
 			panic(fmt.Sprintf("Failed to unmarshal config %s: %s", name, err.Error()))
 		}
-		// if err = C.PreLoad(); err != nil {
-		// 	panic(fmt.Sprintf("Failed to preload config %s: %s", name, err.Error()))
-		// }
+		if err = C.PreLoad(); err != nil {
+			panic(fmt.Sprintf("Failed to preload config %s: %s", name, err.Error()))
+		}
 	})
 }
 
@@ -185,18 +185,24 @@ func (c *Config) String() string {
 	return string(b)
 }
 
-// func (c *Config) PreLoad() error {
-// 	if addr := c.Storage.Cache.Redis.Addr; addr != "" {
-// 		username := c.Storage.Cache.Redis.Username
-// 		password := c.Storage.Cache.Redis.Password
-// 		if c.Middleware.RateLimiter.Store.Redis.Addr == "" {
-// 			c.Middleware.RateLimiter.Store.Redis.Addr = addr
-// 			c.Middleware.RateLimiter.Store.Redis.Username = username
-// 			c.Middleware.RateLimiter.Store.Redis.Password = password
-// 		}
-// 	}
-// 	return nil
-// }
+func (c *Config) PreLoad() error {
+	if addr := c.Storage.Cache.Redis.Addr; addr != "" {
+		username := c.Storage.Cache.Redis.Username
+		password := c.Storage.Cache.Redis.Password
+		if c.Middleware.RateLimiter.Store.Redis.Addr == "" {
+			c.Middleware.RateLimiter.Store.Redis.Addr = addr
+			c.Middleware.RateLimiter.Store.Redis.Username = username
+			c.Middleware.RateLimiter.Store.Redis.Password = password
+		}
+		if c.Middleware.Auth.Store.Type == "redis" &&
+			c.Middleware.Auth.Store.Redis.Addr == "" {
+			c.Middleware.Auth.Store.Redis.Addr = addr
+			c.Middleware.Auth.Store.Redis.Username = username
+			c.Middleware.Auth.Store.Redis.Password = password
+		}
+	}
+	return nil
+}
 
 func (c *Config) Print() {
 	fmt.Println("// -------------------- Load configurations start --------------------")
