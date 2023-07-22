@@ -141,12 +141,12 @@ func (o *jwtAuth) GenerateToken(ctx context.Context, subject string) (TokenInfo,
 	if err != nil {
 		return nil, err
 	}
-	//err = o.callStore(func(store Store) error {
-	//	return store.Set(ctx, tokenStr, time.Duration(expiresAt))
-	//})
-	//if err != nil {
-	//	return nil, err
-	//}
+	err = o.callStore(func(store Store) error {
+		return store.Set(ctx, tokenStr, time.Duration(o.opts.expired)*time.Second)
+	})
+	if err != nil {
+		return nil, err
+	}
 	tokenInfo := &tokenInfo{
 		ExpiresAt:    expiresAt,
 		TokenType:    o.opts.tokenType,
@@ -157,13 +157,14 @@ func (o *jwtAuth) GenerateToken(ctx context.Context, subject string) (TokenInfo,
 }
 
 func (o *jwtAuth) DestroyToken(ctx context.Context, token string) error {
-	claims, err := o.parseToken(token)
+	_, err := o.parseToken(token)
 	if err != nil {
 		return err
 	}
 	return o.callStore(func(store Store) error {
-		expired := time.Until(time.Unix(claims.ExpiresAt, 0))
-		return store.Set(ctx, token, expired)
+		//expired := time.Until(time.Unix(claims.ExpiresAt, 0))
+		//return store.Set(ctx, token, expired)
+		return store.Delete(ctx, token)
 	})
 }
 
@@ -180,7 +181,7 @@ func (o *jwtAuth) ParseSubject(ctx context.Context, token string) (string, error
 	err = o.callStore(func(store Store) error {
 		if exists, err := store.Check(ctx, token); err != nil {
 			return err
-		} else if exists {
+		} else if !exists {
 			return ErrInvalidToken
 		}
 		return nil
