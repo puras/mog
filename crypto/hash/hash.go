@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func MD5(b []byte) string {
@@ -24,4 +25,16 @@ func SHA1(b []byte) string {
 
 func SHA1String(s string) string {
 	return SHA1([]byte(s))
+}
+
+func GeneratePassword(password string) (string, error) {
+	b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func CompareHashAndPassword(hashedPasswd, passwd string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPasswd), []byte(passwd))
 }
