@@ -60,8 +60,10 @@ type Storage struct {
 		Memory    struct {
 			CleanupInterval int `default:"60"`
 		}
-		Badger struct{}
-		Redis  struct {
+		Badger struct {
+			Path string
+		}
+		Redis struct {
 			Addr     string
 			Username string
 			Password string
