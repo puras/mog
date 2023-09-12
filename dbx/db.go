@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/puras/mog/config"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/puras/mog/config"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
@@ -24,6 +25,9 @@ import (
 
 func InitDB(ctx context.Context) (*gorm.DB, func(), error) {
 	cfg := config.C.Storage.DataBase
+	if !cfg.Enable {
+		return nil, nil, nil
+	}
 	resolver := make([]ResolverConfig, len(cfg.Resolver))
 	for i, v := range cfg.Resolver {
 		resolver[i] = ResolverConfig{
