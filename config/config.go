@@ -33,6 +33,7 @@ type Config struct {
 	Storage    Storage
 	Logger     Logger
 	Middleware Middleware
+	ExtConfig  any
 }
 
 type General struct {
