@@ -2,9 +2,10 @@ package oss
 
 import (
 	"context"
+	"io"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"io"
 )
 
 type MinioClientConfig struct {
@@ -17,9 +18,10 @@ type MinioClientConfig struct {
 
 var _ Client = (*MinioClient)(nil)
 
-func NewMinilClient(config MinioClientConfig) (*MinioClient, error) {
+func NewMinioClient(config MinioClientConfig) (*MinioClient, error) {
 	client, err := minio.New(config.Endpoint, &minio.Options{
-		Creds: credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
+		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
+		Secure: false,
 	})
 	if err != nil {
 		return nil, err
