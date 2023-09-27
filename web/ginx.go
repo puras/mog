@@ -2,11 +2,12 @@ package web
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"github.com/puras/mog/dbx"
 	"github.com/puras/mog/errors"
 	"github.com/puras/mog/logger"
-	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -140,9 +141,11 @@ func ResError(c *gin.Context, err error, status ...int) {
 		logger.Context(ctx).Error(er.Detail, fields...)
 	}
 
-	if code >= 500 {
-		er.Detail = http.StatusText(http.StatusInternalServerError)
-	}
+	// 暂时不返回统一的信息
+	// if code >= 500 {
+	// 	er.Detail = http.StatusText(http.StatusInternalServerError)
+	// }
+
 	er.Code = int32(code)
 	ResJson(c, code, NewResponseResult(strconv.Itoa(code), er.Detail, nil))
 }
