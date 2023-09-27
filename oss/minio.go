@@ -13,6 +13,7 @@ type MinioClientConfig struct {
 	Endpoint        string
 	AccessKeyID     string
 	SecretAccessKey string
+	UseSSL          bool
 	BucketName      string
 }
 
@@ -21,7 +22,7 @@ var _ Client = (*MinioClient)(nil)
 func NewMinioClient(config MinioClientConfig) (*MinioClient, error) {
 	client, err := minio.New(config.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
-		Secure: false,
+		Secure: config.UseSSL,
 	})
 	if err != nil {
 		return nil, err
