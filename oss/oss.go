@@ -2,14 +2,15 @@ package oss
 
 import (
 	"context"
-	"github.com/rs/xid"
 	"io"
 	"path/filepath"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 type Client interface {
-	PubObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error)
+	PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error)
 	GetObject(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error)
 	RemoveObject(ctx context.Context, bucketName, objectName string) error
 	StatObject(ctx context.Context, bucketName, objectName string) (*ObjectStat, error)

@@ -45,7 +45,7 @@ type MinioClient struct {
 	client *minio.Client
 }
 
-func (o *MinioClient) PubObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error) {
+func (o *MinioClient) PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error) {
 	if bucketName == "" {
 		bucketName = o.config.BucketName
 	}
