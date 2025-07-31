@@ -203,7 +203,3 @@ func createDataBaseWithMySQL(dsn string) error {
 	_, err = db.Exec(query)
 	return err
 }
-
-func LikeParameter(v string) string {
-	return "%" + v + "%"
-}

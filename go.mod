@@ -1,6 +1,8 @@
 module github.com/puras/mog
 
-go 1.20
+go 1.23.0
+
+toolchain go1.24.3
 
 require (
 	github.com/dgraph-io/badger/v4 v4.1.0
@@ -23,7 +25,7 @@ require (
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/driver/sqlite v1.5.2
-	gorm.io/gorm v1.25.2
+	gorm.io/gorm v1.30.0
 	gorm.io/plugin/dbresolver v1.4.1
 )
 
@@ -76,7 +78,7 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
