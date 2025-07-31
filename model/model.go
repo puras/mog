@@ -6,7 +6,8 @@ import (
 )
 
 type IModel interface {
-	GetID() string
+	DefaultCreated()
+	DefaultUpdated()
 }
 
 type Model struct {
@@ -15,8 +16,15 @@ type Model struct {
 	UpdatedAt time.Time `json:"updatedAt" gorm:"column:updated_at"`
 }
 
-func (self Model) GetID() string {
-	return self.ID
+func (m *Model) DefaultCreated() {
+	var now = time.Now()
+	m.ID = utils.NewID()
+	m.CreatedAt = now
+	m.UpdatedAt = now
+}
+
+func (m *Model) DefaultUpdated() {
+	m.UpdatedAt = time.Now()
 }
 
 type DefaultModel struct {
@@ -35,15 +43,4 @@ type BaseModel struct {
 type TenantModel struct {
 	BaseModel
 	TenantId string `json:"tenant_id" gorm:"size:16"`
-}
-
-func (m *Model) DefaultCreated() {
-	var now = time.Now()
-	m.ID = utils.NewID()
-	m.CreatedAt = now
-	m.UpdatedAt = now
-}
-
-func (m *Model) DefaultUpdated() {
-	m.UpdatedAt = time.Now()
 }
