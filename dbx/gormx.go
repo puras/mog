@@ -23,8 +23,8 @@ type PaginationParam struct {
 	PageSize   int  `form:"page_size" binding:"max=100"`
 }
 
-func (self *PaginationParam) GetPaginationParam() PaginationParam {
-	return *self
+func (self PaginationParam) GetPaginationParam() PaginationParam {
+	return self
 }
 
 type QueryOptions struct {
