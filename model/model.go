@@ -6,14 +6,17 @@ import (
 )
 
 type IModel interface {
-	DefaultCreated()
-	DefaultUpdated()
+	GetID() string
 }
 
 type Model struct {
 	ID        string    `json:"id" gorm:"primary_key;unique_index;size:64"`
 	CreatedAt time.Time `json:"createdAt" gorm:"column:created_at"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"column:updated_at"`
+}
+
+func (self Model) GetID() string {
+	return self.ID
 }
 
 func (m *Model) DefaultCreated() {
