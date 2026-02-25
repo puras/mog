@@ -2,9 +2,10 @@ package oss
 
 import (
 	"context"
+	"io"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"io"
 )
 
 type MinioClientConfig struct {
@@ -12,14 +13,16 @@ type MinioClientConfig struct {
 	Endpoint        string
 	AccessKeyID     string
 	SecretAccessKey string
+	UseSSL          bool
 	BucketName      string
 }
 
 var _ Client = (*MinioClient)(nil)
 
-func NewMinilClient(config MinioClientConfig) (*MinioClient, error) {
+func NewMinioClient(config MinioClientConfig) (*MinioClient, error) {
 	client, err := minio.New(config.Endpoint, &minio.Options{
-		Creds: credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
+		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
+		Secure: config.UseSSL,
 	})
 	if err != nil {
 		return nil, err
@@ -43,7 +46,7 @@ type MinioClient struct {
 	client *minio.Client
 }
 
-func (o *MinioClient) PubObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error) {
+func (o *MinioClient) PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, options ...PutObjectOptions) (*PutObjectResult, error) {
 	if bucketName == "" {
 		bucketName = o.config.BucketName
 	}

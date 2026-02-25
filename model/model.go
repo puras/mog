@@ -1,9 +1,14 @@
 package model
 
 import (
-	"github.com/puras/mog/utils"
 	"time"
+
+	"github.com/puras/mog/utils"
 )
+
+type IModel interface {
+	GetID() string
+}
 
 type Model struct {
 	ID        string    `json:"id" gorm:"primary_key;unique_index;size:64"`
@@ -11,15 +16,8 @@ type Model struct {
 	UpdatedAt time.Time `json:"updatedAt" gorm:"column:updated_at"`
 }
 
-type DefaultModel struct {
-	Model
-	Deleted bool `json:"-"`
-}
-
-type BaseModel struct {
-	DefaultModel
-	CreatedBy string `json:"createdBy" gorm:"column:created_by"`
-	UpdatedBy string `json:"updatedBy" gorm:"column:updated_by"`
+func (self Model) GetID() string {
+	return self.ID
 }
 
 func (m *Model) DefaultCreated() {
@@ -31,4 +29,27 @@ func (m *Model) DefaultCreated() {
 
 func (m *Model) DefaultUpdated() {
 	m.UpdatedAt = time.Now()
+}
+
+type DefaultModel struct {
+	Model
+	Deleted   bool      `json:"-"`
+	DeletedAt time.Time `json:"-" gorm:"column:deleted_at"`
+}
+
+type BaseModel struct {
+	DefaultModel
+	CreatedBy string `json:"createdBy" gorm:"column:created_by"`
+	UpdatedBy string `json:"updatedBy" gorm:"column:updated_by"`
+	DeletedBy string `json:"deletedBy" gorm:"column:deleted_by"`
+}
+
+type TenantModel struct {
+	BaseModel
+	TenantId string `json:"tenant_id" gorm:"size:16"`
+}
+
+type IForm[T IModel] interface {
+	Validate() error
+	FillTo(item *T) error
 }

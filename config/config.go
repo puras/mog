@@ -33,6 +33,7 @@ type Config struct {
 	Storage    Storage
 	Logger     Logger
 	Middleware Middleware
+	ExtConfig  any
 }
 
 type General struct {
@@ -71,6 +72,7 @@ type Storage struct {
 		}
 	}
 	DataBase struct {
+		Enable       bool `default:"true"`
 		Debug        bool
 		Type         string `default:"sqlite3"` // sqlite3/mysql/postgres
 		DSN          string `default:"data/sqlite/106hz.db"`

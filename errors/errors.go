@@ -16,15 +16,26 @@ var (
 
 const (
 	DefaultBadRequestId            = "bad_request"
-	DefaultUnauthorizedId          = "unauthorized"
-	DefaultForbiddenId             = "forbidden"
-	DefaultNotFoundId              = "not_found"
-	DefaultMethodNotAllowedId      = "method_not_allowed"
-	DefaultTooManyRequestsId       = "too_many_requests"
-	DefaultRequestEntityTooLargeId = "request_entity_too_large"
-	DefaultInternalServerErrorId   = "internal_server_error"
-	DefaultConflictId              = "conflict"
-	DefaultRequestTimeoutId        = "request_timeout"
+	DefaultUnauthorizedId          = "unauthorized"             // 未授权
+	DefaultForbiddenId             = "forbidden"                // 无操作权限
+	DefaultNotFoundId              = "not_found"                // 数据未找到
+	DefaultBindError               = "bind_error"               // 绑定错误
+	DefaultDataIsExists            = "data_is_exists"           // 数据已存在
+	DefaultDataNotAllowEdit        = "data_not_allow_edit"      // 数据不允许编辑
+	DefaultDataCheckFailure        = "data_check_failure"       // 数据检查失败
+	DefaultDataIsRelation          = "data_is_relation"         // 数据被引用
+	DefaultDataParseFailure        = "data_parse_failure"       // 数据解析失败
+	DefaultBizError                = "data_biz_error"           //业务逻辑错误
+	DefaultInvalidParam            = "invalid_param"            // 无效的参数
+	DefaultInvalidJson             = "invalid_json"             // 无效的JSON串
+	DefaultInvalidToken            = "invalid_token"            // 无效的Token
+	DefaultRemoteCallError         = "remote_call_error"        //远程调用错误
+	DefaultMethodNotAllowedId      = "method_not_allowed"       // 方法不支持
+	DefaultTooManyRequestsId       = "too_many_requests"        // 太多的请求
+	DefaultRequestEntityTooLargeId = "request_entity_too_large" // 请求体过大
+	DefaultInternalServerErrorId   = "internal_server_error"    // 服务端错误
+	DefaultConflictId              = "conflict"                 // 冲突
+	DefaultRequestTimeoutId        = "request_timeout"          // 请求超时
 )
 
 type Error struct {
@@ -101,6 +112,138 @@ func NotFound(id, format string, a ...any) error {
 		Code:   http.StatusNotFound,
 		Detail: fmt.Sprintf(format, a...),
 		Status: http.StatusText(http.StatusNotFound),
+	}
+}
+
+func BindError(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultBindError
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func DataIsExists(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultDataIsExists
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func DataNotAllowEdit(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultDataNotAllowEdit
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func DataCheckFailure(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultDataCheckFailure
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func DataIsRelation(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultDataIsRelation
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func DataParseFailure(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultDataParseFailure
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func BizError(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultBizError
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func InvalidParam(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultInvalidParam
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func InvalidJson(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultInvalidJson
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func InvalidToken(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultInvalidToken
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
+	}
+}
+
+func RemoteCallError(id, format string, a ...any) error {
+	if id == "" {
+		id = DefaultRemoteCallError
+	}
+	return &Error{
+		Id:     id,
+		Code:   http.StatusInternalServerError,
+		Detail: fmt.Sprintf(format, a...),
+		Status: http.StatusText(http.StatusInternalServerError),
 	}
 }
 
