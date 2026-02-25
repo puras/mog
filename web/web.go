@@ -1,9 +1,12 @@
 package web
 
 import (
-	"github.com/gin-gonic/gin"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
+
+const PARAM_ID = "id"
 
 func GetToken(c *gin.Context) string {
 	var token string

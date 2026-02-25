@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/puras/mog/utils"
 	"time"
+
+	"github.com/puras/mog/utils"
 )
 
 type IModel interface {
@@ -46,4 +47,9 @@ type BaseModel struct {
 type TenantModel struct {
 	BaseModel
 	TenantId string `json:"tenant_id" gorm:"size:16"`
+}
+
+type IForm[T IModel] interface {
+	Validate() error
+	FillTo(item *T) error
 }
