@@ -1,8 +1,6 @@
 module github.com/puras/mog
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.26
 
 require (
 	github.com/dgraph-io/badger/v4 v4.9.1
