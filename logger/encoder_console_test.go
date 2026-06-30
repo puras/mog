@@ -54,8 +54,55 @@ func TestConsoleEncoder_MessageColored(t *testing.T) {
 	}
 	defer buf.Free()
 	out := buf.String()
-	if !strings.Contains(out, ansiGray+"[downstream]"+ansiReset) {
-		t.Fatalf("expected message wrapped in ansiGray, got %q", out)
+	// 标签 [downstream] 应当用 cyan+bold；空 rest 不写出颜色。
+	if !strings.Contains(out, ansiCyan+ansiBold+"[downstream]"+ansiReset) {
+		t.Fatalf("expected [downstream] tagged with cyan+bold, got %q", out)
+	}
+}
+
+func TestConsoleEncoder_MessagePrefixAndRest(t *testing.T) {
+	setColorMode("on")
+	defer setColorMode("auto")
+
+	enc := NewConsoleEncoder("default", "15:04:05.000")
+	buf, err := enc.EncodeEntry(
+		zapcore.Entry{Level: zapcore.InfoLevel, Message: "[downstream] 请求 (claude-code → MoGo)"},
+		[]zapcore.Field{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer buf.Free()
+	out := buf.String()
+	// [downstream] 用 cyan+bold
+	if !strings.Contains(out, ansiCyan+ansiBold+"[downstream]"+ansiReset) {
+		t.Fatalf("expected [downstream] in cyan+bold, got %q", out)
+	}
+	// 后面 rest 用 dim grey
+	if !strings.Contains(out, ansiGray+"请求 (claude-code → MoGo)"+ansiReset) {
+		t.Fatalf("expected rest in dim grey, got %q", out)
+	}
+}
+
+func TestConsoleEncoder_MessagePlainWhenColorOff(t *testing.T) {
+	setColorMode("off")
+	defer setColorMode("auto")
+
+	enc := NewConsoleEncoder("default", "15:04:05.000")
+	buf, err := enc.EncodeEntry(
+		zapcore.Entry{Level: zapcore.InfoLevel, Message: "[downstream] rest"},
+		[]zapcore.Field{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer buf.Free()
+	out := buf.String()
+	if strings.ContainsAny(out, "\x1b") {
+		t.Fatalf("no ANSI expected, got %q", out)
+	}
+	if !strings.Contains(out, "[downstream] rest") {
+		t.Fatalf("raw message must be preserved, got %q", out)
 	}
 }
 

@@ -156,12 +156,7 @@ func (e *ConsoleEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) 
 			buf.AppendString(spanName)
 		}
 	} else {
-		// msg 套一层 dim grey，无论业务侧是否带 [xxx] 前缀都能看出来。
-		if useColor() {
-			buf.AppendString(color(ent.Message, ansiGray))
-		} else {
-			buf.AppendString(ent.Message)
-		}
+		writeMessage(buf, ent.Message)
 	}
 
 	for _, f := range fields {
@@ -240,6 +235,52 @@ func isFrameKey(key string) bool {
 		return true
 	}
 	return false
+}
+
+// writeMessage 把 msg 写到 buf；开启颜色时：
+//   - 连续匹配 msg 开头的 [...] 标签用 cyan+bold（强提示）；
+//   - 剩余正文用 dim grey（不抢戏）。
+//   - 关闭颜色时按原文输出。
+//
+// 例子：
+//   msg = "[downstream] 请求 (claude-code → MoGo)"
+//   输出 = "\x1b[1;36m[downstream]\x1b[0m \x1b[90m请求 (...)\x1b[0m"
+//
+// 这让业务前缀一眼可见，同时 msg 主体仍比 INFO/CYAN tag 浅一档。
+func writeMessage(buf *buffer.Buffer, msg string) {
+	if !useColor() {
+		buf.AppendString(msg)
+		return
+	}
+	i := 0
+	// 匹配 msg 开头的 [...] 标签，允许连续多个。
+	for i < len(msg) {
+		if msg[i] == ' ' || msg[i] == '\t' {
+			break
+		}
+		if msg[i] != '[' {
+			break
+		}
+		end := strings.IndexByte(msg[i:], ']')
+		if end < 0 {
+			break
+		}
+		tag := msg[i+1 : i+end]
+		if tag == "" || strings.TrimSpace(tag) == "" {
+			break
+		}
+		full := msg[i : i+end+1]
+		buf.AppendString(color(full, ansiCyan+ansiBold))
+		i += end + 1
+		// 标签后允许一个空格分隔（连续标签也能匹配 [a][b]）。
+		if i < len(msg) && msg[i] == ' ' {
+			i++
+		}
+	}
+	rest := msg[i:]
+	if rest != "" {
+		buf.AppendString(color(rest, ansiGray))
+	}
 }
 
 func writeIndent(buf *buffer.Buffer, depth int32) {
