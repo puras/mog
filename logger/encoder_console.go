@@ -172,8 +172,16 @@ func (e *ConsoleEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) 
 		writeKV(buf, f)
 	}
 
-	if ent.Caller.Defined {
-		callerShort := trimCallerPath(ent.Caller.File, ent.Caller.Line)
+	// caller: 优先取业务注入的 _log_caller field；其次回退 zap 自动填充的 ent.Caller。
+	callerShort := ""
+	if cf, ok := extractCaller(fields); ok {
+		if cv, ok := cf.Interface.(callerFieldValue); ok {
+			callerShort = trimCallerPath(cv.file, cv.line)
+		}
+	} else if ent.Caller.Defined {
+		callerShort = trimCallerPath(ent.Caller.File, ent.Caller.Line)
+	}
+	if callerShort != "" {
 		buf.AppendByte(' ')
 		if useColor() {
 			buf.AppendString(color(callerShort, ansiDim))
@@ -228,7 +236,7 @@ func (e *ConsoleEncoder) AddReflected(key string, value interface{}) error      
 func isFrameKey(key string) bool {
 	switch key {
 	case "span", "span_depth", "span_parent", "span_cost_ms", "span_children",
-		"trace_id", "user_id", "tag", "cost_ms":
+		"trace_id", "user_id", "tag", "cost_ms", callerFieldKey:
 		return true
 	}
 	return false

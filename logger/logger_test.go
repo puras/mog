@@ -63,6 +63,19 @@ func TestFrom_AutoInjectCtxFields(t *testing.T) {
 	if m["msg"] != "hello" || m["k"] != "v" {
 		t.Fatalf("payload mismatch: %+v", m)
 	}
+	// caller 字段由 Logger.Info 自动注入，结构是 {file, line}。
+	caller, ok := m[callerFieldKey].(map[string]any)
+	if !ok {
+		t.Fatalf("caller field missing or wrong type: %+v", m[callerFieldKey])
+	}
+	// 测试场景下 testing 框架会插一帧，所以 file 不一定是 logger_test.go。
+	// 只要非空、非 logger 包内，且 line > 0 即可。
+	if caller["file"].(string) == "" {
+		t.Fatalf("caller.file empty")
+	}
+	if strings.Contains(caller["file"].(string), "/logger/") {
+		t.Fatalf("caller.file should be outside logger pkg, got %v", caller["file"])
+	}
 }
 
 func TestSpan_NestFieldsAndParent(t *testing.T) {

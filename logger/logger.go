@@ -3,11 +3,66 @@ package logger
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// callerFieldKey 是 Logger.Info/Warn/Error 自动注入的 field key，
+// 业务层无需关心，console encoder / JSON encoder 都会识别。
+const callerFieldKey = "_log_caller"
+
+// callerFieldValue 携带现场 caller 信息（file:line）。
+// 用 zapcore.ObjectMarshaler 让序列化可控。
+type callerFieldValue struct {
+	file string
+	line int
+}
+
+func (c callerFieldValue) String() string {
+	if c.file == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d", c.file, c.line)
+}
+
+// MarshalLogObject 让 JSON encoder 直接拿到 file/line 两个字段。
+func (c callerFieldValue) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("file", c.file)
+	enc.AddInt("line", c.line)
+	return nil
+}
+
+// addCallerField 用 runtime.Caller 抓 caller，封装成 zap.Field。
+// 从给定的 baseSkip 出发向上探测，找到第一个不在 logger 包内的 caller 帧。
+// 这样无论 Logger.Info 上层包了几层都能准确定位业务调用方。
+func addCallerField(baseSkip int) zapcore.Field {
+	for skip := baseSkip; skip < baseSkip+10; skip++ {
+		_, file, _, ok := runtime.Caller(skip)
+		if !ok {
+			return zap.Skip()
+		}
+		// 跳过自身：caller file 在 logger 包内就不是业务。
+		if !strings.Contains(file, "/logger/") && !strings.HasSuffix(file, "/logger") {
+			_, file, line, _ := runtime.Caller(skip)
+			return zap.Object(callerFieldKey, callerFieldValue{file: file, line: line})
+		}
+	}
+	return zap.Skip()
+}
+
+// extractCaller 从 fields 中拿出 callerField（如果有）。
+func extractCaller(fields []zapcore.Field) (zapcore.Field, bool) {
+	for _, f := range fields {
+		if f.Key == callerFieldKey {
+			return f, true
+		}
+	}
+	return zapcore.Field{}, false
+}
 
 // 内部全局 zap logger 句柄，由 Init() 一次性安装。
 var globalLogger atomic.Pointer[zap.Logger]
@@ -65,15 +120,22 @@ func Context(ctx context.Context) *Logger { return From(ctx) }
 // Info 打印 info 级日志。同时支持两种调用风格：
 //   - zap 风格：Info(msg, zap.String(...), zap.Int(...))，全部 args 都是 zap.Field；
 //   - slog 风格：Info(msg, "key", value, "key2", value2)，args 按 key/value 解析。
+//
+// 自动注入 caller field，encoder 读这个 field 输出 file:line。
+// 不依赖 zap 的 WithCaller，因此 logger.CallerSkip 不需要业务配置。
 func (l *Logger) Info(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	caller := addCallerField(2) // [addCallerField -> Info -> 业务]
 	if fields, ok := tryAllFields(args); ok {
+		fields = append([]zapcore.Field{caller}, fields...)
 		l.z.Info(msg, fields...)
 		return
 	}
-	l.z.Info(msg, argsToFields(args)...)
+	extra := argsToFields(args)
+	extra = append([]zapcore.Field{caller}, extra...)
+	l.z.Info(msg, extra...)
 }
 
 // Warn 同 Info。
@@ -81,11 +143,15 @@ func (l *Logger) Warn(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	caller := addCallerField(2)
 	if fields, ok := tryAllFields(args); ok {
+		fields = append([]zapcore.Field{caller}, fields...)
 		l.z.Warn(msg, fields...)
 		return
 	}
-	l.z.Warn(msg, argsToFields(args)...)
+	extra := argsToFields(args)
+	extra = append([]zapcore.Field{caller}, extra...)
+	l.z.Warn(msg, extra...)
 }
 
 // Error 同 Info。
@@ -93,11 +159,15 @@ func (l *Logger) Error(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	caller := addCallerField(2)
 	if fields, ok := tryAllFields(args); ok {
+		fields = append([]zapcore.Field{caller}, fields...)
 		l.z.Error(msg, fields...)
 		return
 	}
-	l.z.Error(msg, argsToFields(args)...)
+	extra := argsToFields(args)
+	extra = append([]zapcore.Field{caller}, extra...)
+	l.z.Error(msg, extra...)
 }
 
 // Fatal 同 Info。
@@ -105,11 +175,15 @@ func (l *Logger) Fatal(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	caller := addCallerField(2)
 	if fields, ok := tryAllFields(args); ok {
+		fields = append([]zapcore.Field{caller}, fields...)
 		l.z.Fatal(msg, fields...)
 		return
 	}
-	l.z.Fatal(msg, argsToFields(args)...)
+	extra := argsToFields(args)
+	extra = append([]zapcore.Field{caller}, extra...)
+	l.z.Fatal(msg, extra...)
 }
 
 // Debug 同 Info。
@@ -117,11 +191,15 @@ func (l *Logger) Debug(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	caller := addCallerField(2)
 	if fields, ok := tryAllFields(args); ok {
+		fields = append([]zapcore.Field{caller}, fields...)
 		l.z.Debug(msg, fields...)
 		return
 	}
-	l.z.Debug(msg, argsToFields(args)...)
+	extra := argsToFields(args)
+	extra = append([]zapcore.Field{caller}, extra...)
+	l.z.Debug(msg, extra...)
 }
 
 // tryAllFields 检查 args 是否全部为 zap.Field；是则直接转 []zap.Field 透传。
