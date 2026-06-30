@@ -278,8 +278,9 @@ func writeMessage(buf *buffer.Buffer, msg string) {
 		}
 	}
 	rest := msg[i:]
+	// 正文保持默认颜色，不染色，避免整体发灰。
 	if rest != "" {
-		buf.AppendString(color(rest, ansiGray))
+		buf.AppendString(rest)
 	}
 }
 

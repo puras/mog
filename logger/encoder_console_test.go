@@ -78,9 +78,14 @@ func TestConsoleEncoder_MessagePrefixAndRest(t *testing.T) {
 	if !strings.Contains(out, ansiCyan+ansiBold+"[downstream]"+ansiReset) {
 		t.Fatalf("expected [downstream] in cyan+bold, got %q", out)
 	}
-	// 后面 rest 用 dim grey
-	if !strings.Contains(out, ansiGray+"请求 (claude-code → MoGo)"+ansiReset) {
-		t.Fatalf("expected rest in dim grey, got %q", out)
+	// 正文部分不应被包任何 ANSI 颜色（保持默认终端色）。
+	if !strings.Contains(out, "请求 (claude-code → MoGo)") {
+		t.Fatalf("expected raw rest text, got %q", out)
+	}
+	// 断言：ANSI 转义只出现在标签段；正文区段裸出。
+	// 查找 rest 段前最近的换行或开头，验证它没前缀 ANSI。
+	if strings.Contains(out, "\x1b"+ansiGray+"请求") {
+		t.Fatalf("rest should not be wrapped in ansiGray, got %q", out)
 	}
 }
 
