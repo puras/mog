@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // 内部全局 zap logger 句柄，由 Init() 一次性安装。
@@ -61,44 +62,84 @@ func S(ctx context.Context) *Logger { return From(ctx) }
 // Context 兼容老 mog 调用点：logger.Context(ctx).Info(...) 等价于 logger.From(ctx).Info(...)。
 func Context(ctx context.Context) *Logger { return From(ctx) }
 
-// Debug 打印 debug 级日志。
-func (l *Logger) Debug(msg string, args ...any) {
+// Info 打印 info 级日志。同时支持两种调用风格：
+//   - zap 风格：Info(msg, zap.String(...), zap.Int(...))，全部 args 都是 zap.Field；
+//   - slog 风格：Info(msg, "key", value, "key2", value2)，args 按 key/value 解析。
+func (l *Logger) Info(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
-	l.z.Debug(msg, argsToFields(args)...)
-}
-
-// Info 打印 info 级日志。
-func (l *Logger) Info(msg string, args ...any) {
-	if l == nil || l.z == nil {
+	if fields, ok := tryAllFields(args); ok {
+		l.z.Info(msg, fields...)
 		return
 	}
 	l.z.Info(msg, argsToFields(args)...)
 }
 
-// Warn 打印 warn 级日志。
+// Warn 同 Info。
 func (l *Logger) Warn(msg string, args ...any) {
 	if l == nil || l.z == nil {
+		return
+	}
+	if fields, ok := tryAllFields(args); ok {
+		l.z.Warn(msg, fields...)
 		return
 	}
 	l.z.Warn(msg, argsToFields(args)...)
 }
 
-// Error 打印 error 级日志。
+// Error 同 Info。
 func (l *Logger) Error(msg string, args ...any) {
 	if l == nil || l.z == nil {
+		return
+	}
+	if fields, ok := tryAllFields(args); ok {
+		l.z.Error(msg, fields...)
 		return
 	}
 	l.z.Error(msg, argsToFields(args)...)
 }
 
-// Fatal 打印 fatal 级日志并退出。
+// Fatal 同 Info。
 func (l *Logger) Fatal(msg string, args ...any) {
 	if l == nil || l.z == nil {
 		return
 	}
+	if fields, ok := tryAllFields(args); ok {
+		l.z.Fatal(msg, fields...)
+		return
+	}
 	l.z.Fatal(msg, argsToFields(args)...)
+}
+
+// Debug 同 Info。
+func (l *Logger) Debug(msg string, args ...any) {
+	if l == nil || l.z == nil {
+		return
+	}
+	if fields, ok := tryAllFields(args); ok {
+		l.z.Debug(msg, fields...)
+		return
+	}
+	l.z.Debug(msg, argsToFields(args)...)
+}
+
+// tryAllFields 检查 args 是否全部为 zap.Field；是则直接转 []zap.Field 透传。
+// 这是为了兼容老 mog 中 "Logger.Info(msg, fields...)" 的调用风格，
+// 避免被误识别为 slog key/value 解析导致 Field 结构体被反射输出。
+func tryAllFields(args []any) ([]zap.Field, bool) {
+	if len(args) == 0 {
+		return nil, true
+	}
+	out := make([]zap.Field, 0, len(args))
+	for _, a := range args {
+		f, ok := a.(zapcore.Field)
+		if !ok {
+			return nil, false
+		}
+		out = append(out, f)
+	}
+	return out, true
 }
 
 // With 派生带附加字段的 Logger（不影响源 logger）。
