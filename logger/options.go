@@ -46,7 +46,7 @@ type FileSink struct {
 type Config struct {
 	// Level 全局最低 level。
 	Level zapcore.Level
-	// CallerSkip 调栈跳过层数。
+	// CallerSkip 调栈跳过层数。<=0 表示不抓 caller，避免 "failed to get caller" 类警告。
 	CallerSkip int
 	// Sampling 每秒同 msg 最多打印条数；0 关闭。
 	Sampling int

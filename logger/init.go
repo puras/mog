@@ -25,10 +25,6 @@ func InitWithConfig(cfg Config) (func(), error) {
 	mux.Lock()
 	defer mux.Unlock()
 
-	if cfg.CallerSkip <= 0 {
-		cfg.CallerSkip = 2
-	}
-
 	// —— Color 设置 ——
 	setColorMode(cfg.Console.Color)
 
@@ -62,12 +58,20 @@ func InitWithConfig(cfg Config) (func(), error) {
 	}
 
 	tee := Multi(cores...)
-	l := zap.New(
-		tee,
-		zap.WithCaller(true),
+
+	// CallerSkip <= 0 表示业务侧不关心 caller 位置（默认）；
+	// 这种情形直接关闭 caller 收集，避免 "failed to get caller" 警告。
+	// CallerSkip > 0 才需要 WithCaller + AddCallerSkip 配合准确跳过。
+	opts := []zap.Option{
 		zap.AddStacktrace(zap.ErrorLevel),
-		zap.AddCallerSkip(cfg.CallerSkip),
-	)
+	}
+	if cfg.CallerSkip > 0 {
+		opts = append(opts,
+			zap.WithCaller(true),
+			zap.AddCallerSkip(cfg.CallerSkip),
+		)
+	}
+	l := zap.New(tee, opts...)
 	if cfg.Sampling > 0 {
 		l = l.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			return zapcore.NewSampler(c, time.Second, cfg.Sampling, cfg.Sampling)
