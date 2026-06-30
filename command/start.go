@@ -3,13 +3,14 @@ package command
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+
 	"github.com/puras/mog/config"
 	"github.com/puras/mog/logger"
 	"github.com/puras/mog/server"
 	"github.com/urfave/cli/v2"
-	"os"
-	"os/exec"
-	"path/filepath"
 
 	"go.uber.org/zap"
 )

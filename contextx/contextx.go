@@ -11,6 +11,7 @@ type (
 	transCtx     struct{}
 	rowLockCtx   struct{}
 	userIdCtx    struct{}
+	roleCtx      struct{}
 	userTokenCtx struct{}
 	userCacheCtx struct{}
 )
@@ -54,6 +55,18 @@ func NewUserId(ctx context.Context, userId string) context.Context {
 
 func FromUserId(ctx context.Context) string {
 	v := ctx.Value(userIdCtx{})
+	if v != nil {
+		return v.(string)
+	}
+	return ""
+}
+
+func NewRole(ctx context.Context, role string) context.Context {
+	return context.WithValue(ctx, roleCtx{}, role)
+}
+
+func FromRole(ctx context.Context) string {
+	v := ctx.Value(roleCtx{})
 	if v != nil {
 		return v.(string)
 	}

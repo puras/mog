@@ -9,6 +9,13 @@ func SkippedPathPrefixes(c *gin.Context, prefixes ...string) bool {
 	path := c.Request.URL.Path
 	pathLen := len(path)
 	for _, p := range prefixes {
+		// "/" 精确匹配根路径，不作为前缀放行所有路径
+		if p == "/" {
+			if pathLen == 1 {
+				return true
+			}
+			continue
+		}
 		if pl := len(p); pathLen >= pl && path[:pl] == p {
 			return true
 		}
