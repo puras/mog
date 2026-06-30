@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func StartCmd(params server.ServerParam) *cli.Command {
@@ -61,7 +62,7 @@ func StartCmd(params server.ServerParam) *cli.Command {
 				if config.C.IsDebug() {
 					config.C.Print()
 				}
-				loggerClean, err := logger.Init()
+				loggerClean, err := initLoggerFromConfig(config.C.Logger)
 				if err != nil {
 					return nil, err
 				}
@@ -91,4 +92,40 @@ func StartCmd(params server.ServerParam) *cli.Command {
 			})
 		},
 	}
+}
+
+// initLoggerFromConfig 把 config.Config 内的 Logger 段翻译成 logger.Config 并调用 Init。
+// 单一函数集中处理：console / file / sampling 字段映射 + 字符串 level 解析。
+func initLoggerFromConfig(c config.Logger) (func(), error) {
+	lvl, err := logger.ParseLevel(c.Level)
+	if err != nil {
+		lvl = zapcore.InfoLevel
+	}
+	return logger.InitWithConfig(logger.Config{
+		Level:      lvl,
+		CallerSkip: c.CallerSkip,
+		Sampling:   c.Sampling,
+		Console: logger.ConsoleSink{
+			Enable:     c.Console.Enable,
+			Color:      defaultIfEmpty(c.Console.Color, "auto"),
+			Theme:      defaultIfEmpty(c.Console.Theme, "default"),
+			TimeLayout: defaultIfEmpty(c.Console.TimeLayout, "15:04:05.000"),
+		},
+		File: logger.FileSink{
+			Enable:     c.File.Enable,
+			Path:       c.File.Path,
+			MaxSize:    c.File.MaxSize,
+			MaxBackups: c.File.MaxBackups,
+			MaxAge:     c.File.MaxAge,
+			Compress:   c.File.Compress,
+			LocalTime:  c.File.LocalTime,
+		},
+	})
+}
+
+func defaultIfEmpty(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
 }
