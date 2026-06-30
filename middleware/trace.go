@@ -36,7 +36,6 @@ func TraceWithConfig(config TraceConfig) gin.HandlerFunc {
 		}
 
 		ctx := logger.NewTraceId(c.Request.Context(), traceId)
-		ctx = logger.NewTraceId(ctx, traceId)
 		c.Request = c.Request.WithContext(ctx)
 		c.Writer.Header().Set(config.RequestHeaderKey, traceId)
 

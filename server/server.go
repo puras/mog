@@ -33,7 +33,7 @@ func Run(ctx context.Context, handler func(ctx context.Context) (func(), error))
 EXIT:
 	for {
 		sig := <-sc
-		logger.Context(ctx).Info("Receive signal", zap.String("signal", sig.String()))
+		logger.From(ctx).Info("Receive signal", zap.String("signal", sig.String()))
 		switch sig {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			state = 0
@@ -45,14 +45,14 @@ EXIT:
 	}
 
 	cleanFunc()
-	logger.Context(ctx).Info("Server exit, bye...")
+	logger.From(ctx).Info("Server exit, bye...")
 	time.Sleep(time.Millisecond * 100)
 	os.Exit(state)
 	return nil
 }
 
 func Start(ctx context.Context, injector *inject.Injector, registryRoutes func(ctx context.Context, e *gin.Engine) error, parseCurrentUser func(c *gin.Context) (*middleware.AuthInfo, error)) (func(), error) {
-	logger.Context(ctx).Info("Start...")
+	logger.From(ctx).Info("Start...")
 
 	clean, err := startHTTPServer(ctx, registryRoutes, parseCurrentUser)
 	if err != nil {
@@ -107,11 +107,11 @@ func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Contex
 		WriteTimeout: time.Second * time.Duration(config.C.General.HTTP.WriteTimeout),
 		IdleTimeout:  time.Second * time.Duration(config.C.General.HTTP.IdleTimeout),
 	}
-	logger.Context(ctx).Info(fmt.Sprintf("HTTP server is listening on %s", serv.Addr))
+	logger.From(ctx).Info(fmt.Sprintf("HTTP server is listening on %s", serv.Addr))
 	go func() {
 		err := serv.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			logger.Context(ctx).Error("Failed to listen http server", zap.Error(err))
+			logger.From(ctx).Error("Failed to listen http server", zap.Error(err))
 			panic(err)
 		}
 	}()
@@ -122,7 +122,7 @@ func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Contex
 
 		serv.SetKeepAlivesEnabled(false)
 		if err := serv.Shutdown(ctx); err != nil {
-			logger.Context(ctx).Error("Failed to shutdown http server", zap.Error(err))
+			logger.From(ctx).Error("Failed to shutdown http server", zap.Error(err))
 		}
 	}, nil
 }

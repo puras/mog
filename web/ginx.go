@@ -136,9 +136,9 @@ func ResError(c *gin.Context, err error, status ...int) {
 
 	ctx = logger.NewTag(ctx, logger.TagKeySystem)
 	if code >= 400 && code < 500 {
-		logger.Context(ctx).Info(er.Detail, fields...)
+		logger.From(ctx).InfoF(er.Detail, fields...)
 	} else if code >= 500 {
-		logger.Context(ctx).Error(er.Detail, fields...)
+		logger.From(ctx).ErrorF(er.Detail, fields...)
 	}
 
 	// 暂时不返回统一的信息

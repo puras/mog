@@ -44,13 +44,13 @@ func StartCmd(params server.ServerParam) *cli.Command {
 				if daemon {
 					bin, err := filepath.Abs(os.Args[0])
 					if err != nil {
-						logger.Context(ctx).Error("Failed to get absolute path for command", zap.Error(err))
+						logger.From(ctx).Error("Failed to get absolute path for command", zap.Error(err))
 						return nil, err
 					}
 					command := exec.Command(bin, "start", "--conf", confFile)
 					err = command.Start()
 					if err != nil {
-						logger.Context(ctx).Error("Failed to start daemon thread", zap.Error(err))
+						logger.From(ctx).Error("Failed to start daemon thread", zap.Error(err))
 						return nil, err
 					}
 					_ = os.WriteFile(fmt.Sprintf("%s.lock", c.App.Name), []byte(fmt.Sprintf("%d", command.Process.Pid)), 0666)
@@ -61,11 +61,11 @@ func StartCmd(params server.ServerParam) *cli.Command {
 				if config.C.IsDebug() {
 					config.C.Print()
 				}
-				loggerClean, err := logger.Init(ctx)
+				loggerClean, err := logger.Init()
 				if err != nil {
 					return nil, err
 				}
-				logger.Context(ctx).Info("Starting server",
+				logger.From(ctx).Info("Starting server",
 					zap.String("config file", confFile),
 					zap.Bool("daemon", daemon),
 					zap.Int("pid", os.Getpid()),
