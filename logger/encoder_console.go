@@ -156,7 +156,12 @@ func (e *ConsoleEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) 
 			buf.AppendString(spanName)
 		}
 	} else {
-		buf.AppendString(ent.Message)
+		// msg 套一层 dim grey，无论业务侧是否带 [xxx] 前缀都能看出来。
+		if useColor() {
+			buf.AppendString(color(ent.Message, ansiGray))
+		} else {
+			buf.AppendString(ent.Message)
+		}
 	}
 
 	for _, f := range fields {

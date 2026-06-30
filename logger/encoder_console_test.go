@@ -40,6 +40,25 @@ func TestConsoleEncoder_NoColorOutput(t *testing.T) {
 	}
 }
 
+func TestConsoleEncoder_MessageColored(t *testing.T) {
+	setColorMode("on")
+	defer setColorMode("auto")
+
+	enc := NewConsoleEncoder("default", "15:04:05.000")
+	buf, err := enc.EncodeEntry(
+		zapcore.Entry{Level: zapcore.InfoLevel, Message: "[downstream]"},
+		[]zapcore.Field{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer buf.Free()
+	out := buf.String()
+	if !strings.Contains(out, ansiGray+"[downstream]"+ansiReset) {
+		t.Fatalf("expected message wrapped in ansiGray, got %q", out)
+	}
+}
+
 func TestConsoleEncoder_ColorOnForLevel(t *testing.T) {
 	setColorMode("on")
 
