@@ -92,15 +92,33 @@ type Storage struct {
 }
 
 type Logger struct {
-	Debug      bool
 	Level      string // debug/info/warn/error/dpanic/panic/fatal
 	CallerSkip int
-	File       struct {
-		Enable     bool
-		Path       string
-		MaxSize    int
-		MaxBackups int
-	}
+
+	// Sampling 每秒同 msg 最多打印多少条；0 关闭（防爆）。
+	Sampling int
+
+	Console ConsoleConfig
+	File    FileConfig
+}
+
+// ConsoleConfig 控制台 sink 配置。
+type ConsoleConfig struct {
+	Enable     bool   // 是否启用 stdout 输出
+	Color      string // auto | on | off
+	Theme      string // default | minimal | bright
+	TimeLayout string // 默认 "15:04:05.000"
+}
+
+// FileConfig 文件 sink 配置。
+type FileConfig struct {
+	Enable     bool
+	Path       string
+	MaxSize    int // MB
+	MaxBackups int
+	MaxAge     int // days
+	Compress   bool
+	LocalTime  bool
 }
 
 type Middleware struct {
