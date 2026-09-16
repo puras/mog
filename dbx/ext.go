@@ -51,6 +51,22 @@ func WhereLike(db *gorm.DB, field string, value string) {
 	db.Where(field+" like ?", LikeParameter(value))
 }
 
+// WhereIn 在 field 上加 IN 匹配。
+//
+// 生成 `field IN ?` + values（gorm 会把 slice 展开为 `(?, ?, ...)`）。
+// values 为空时直接跳过，避免某些方言（MySQL/PostgreSQL）下 IN () 语法错误；
+// 与 WhereLike 一致，不为单一方言提供分支 helper。
+//
+// 相比 []any 版本，使用泛型 T 让调用方可以直接传 []int64 / []string 等
+// typed slice（无 boxing 拷贝），编译期即拒掉异构元素——SQL IN 天然同构，
+// 把约束上提到类型层比留到运行时更合算。
+func WhereIn[T any](db *gorm.DB, field string, values []T) {
+	if len(values) == 0 {
+		return
+	}
+	db.Where(field+" IN ?", values)
+}
+
 // GetTableName 通过 gorm.Statement.Parse 获取 model 对应的表名（动态，非硬编码）。
 // Parse 失败时回退到 NamingStrategy.TableName。
 //
