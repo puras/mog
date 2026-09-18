@@ -39,9 +39,9 @@ type DefaultModel struct {
 
 type BaseModel struct {
 	DefaultModel
-	CreatedBy string `json:"createdBy" gorm:"column:created_by"`
-	UpdatedBy string `json:"updatedBy" gorm:"column:updated_by"`
-	DeletedBy string `json:"deletedBy" gorm:"column:deleted_by"`
+	CreatedBy string `json:"createdBy" gorm:"column:created_by;size:64"`
+	UpdatedBy string `json:"updatedBy" gorm:"column:updated_by;size:64"`
+	DeletedBy string `json:"deletedBy" gorm:"column:deleted_by;size:64"`
 }
 
 type TenantModel struct {
