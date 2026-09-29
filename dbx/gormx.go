@@ -63,7 +63,11 @@ func (t *Trans) Exec(ctx context.Context, fn TransFunc) error {
 	if _, ok := contextx.FromTrans(ctx); ok {
 		return fn(ctx)
 	}
-	return t.DB.Transaction(func(db *gorm.DB) error {
+	// WithContext 必须显式带上：GORM 的 Begin() 用 db.Statement.Context 作为事务 ctx，
+	// 而 root DB 的 Statement.Context 是 context.Background()。漏掉它会让事务失去
+	// deadline / cancel，调用方 contextx.NewTrans(ctx, ...) 拿到的 tx 也不认 ctx，
+	// ctx 过期后语句照跑、事务无法自行收敛（连接带着未关闭的 tx 回到池里）。
+	return t.DB.WithContext(ctx).Transaction(func(db *gorm.DB) error {
 		return fn(contextx.NewTrans(ctx, db))
 	})
 }
