@@ -82,6 +82,7 @@ func TestTransExec_RollsBackAfterContextCancel(t *testing.T) {
 	defer cancel()
 
 	var sawCancelErr bool
+	var createErr error
 	err := tr.Exec(ctx, func(c context.Context) error {
 		tx, ok := contextx.FromTrans(c)
 		if !ok {
@@ -94,17 +95,20 @@ func TestTransExec_RollsBackAfterContextCancel(t *testing.T) {
 		cancel()
 		time.Sleep(100 * time.Millisecond)
 
-		if err := tx.Create(&testItem{ID: "c", Name: "c"}).Error; err == nil {
+		createErr = tx.Create(&testItem{ID: "c", Name: "c"}).Error
+		if createErr == nil {
 			t.Error("ctx 已取消，裸取的事务仍写入成功")
-		} else if !errors.Is(err, context.Canceled) {
-			t.Errorf("期望 context.Canceled，得到 %v", err)
+		} else if !errors.Is(createErr, context.Canceled) {
+			t.Errorf("期望 context.Canceled，得到 %v", createErr)
 		} else {
 			sawCancelErr = true
 		}
-		return nil
+		// 必须把 ctx 取消后的错误向上抛，让 GORM 走 Rollback 而不是 Commit。
+		// 修复前 WithContext(ctx) 不存在，tx 走 background，c 行照样写成功、Exec 返回 nil。
+		return createErr
 	})
-	if err != nil {
-		t.Fatalf("Exec: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Exec: 期望 context.Canceled，得到 %v", err)
 	}
 	if !sawCancelErr {
 		t.Error("未观察到 context.Canceled")
