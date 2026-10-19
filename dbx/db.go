@@ -57,8 +57,12 @@ func InitDB(ctx context.Context) (*gorm.DB, func(), error) {
 	return db, func() {
 		sqlDB, err := db.DB()
 		if err != nil {
-			_ = sqlDB.Close()
+			// 拿不到连接池（如 ConnPool 不是 *sql.DB，gorm 返回 ErrInvalidDB），
+			// 此时 sqlDB 为 nil，无从关闭。必须提前返回：对 nil *sql.DB 调
+			// Close 会在 db.mu.Lock() 上 panic。
+			return
 		}
+		_ = sqlDB.Close()
 	}, nil
 }
 

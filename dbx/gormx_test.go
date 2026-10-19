@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/puras/mog/config"
 	"github.com/puras/mog/contextx"
 )
 
@@ -288,5 +289,67 @@ func TestWrapQueryOptions_OrderFields(t *testing.T) {
 	}
 	if len(got) != 3 {
 		t.Fatalf("期望返回 3 行，得到 %d", len(got))
+	}
+}
+
+// InitDB 返回的 cleanup 必须真正关掉连接池。
+//
+// 修复前这里是 `if err != nil { sqlDB.Close() }`，判断写反了：而 db.DB()
+// 只在 ConnPool 不是 *sql.DB 时才报错，正常路径恒为 (db, nil) —— 于是
+// cleanup 永远不关池（静默泄漏，且 injector 的初始化失败回滚路径也跟着失效），
+// 反倒是唯一会执行到 Close() 的分支里 sqlDB 为 nil，直接 panic。
+func TestInitDB_CleanupClosesPool(t *testing.T) {
+	old := config.C.Storage.DataBase
+	defer func() { config.C.Storage.DataBase = old }()
+
+	// MaxIdleConns 必须 > 0，否则 database/sql 会立刻回收空闲连接，测不出差异
+	config.C.Storage.DataBase.Enable = true
+	config.C.Storage.DataBase.Type = "sqlite3"
+	config.C.Storage.DataBase.DSN = filepath.Join(t.TempDir(), "cleanup.db")
+	config.C.Storage.DataBase.MaxIdleConns = 5
+	config.C.Storage.DataBase.MaxOpenConns = 5
+
+	db, cleanup, err := InitDB(context.Background())
+	if err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	if cleanup == nil {
+		t.Fatal("cleanup 为 nil，无法验证")
+	}
+
+	// 建一张表，确保确实持有空闲连接
+	if err := db.AutoMigrate(&testItem{}); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("db.DB(): %v", err)
+	}
+	if before := sqlDB.Stats().OpenConnections; before == 0 {
+		t.Fatalf("测试前提不成立：cleanup 前应有空闲连接，实际 %d", before)
+	}
+
+	cleanup()
+
+	if after := sqlDB.Stats().OpenConnections; after != 0 {
+		t.Errorf("cleanup 未关闭连接池：OpenConnections = %d, want 0", after)
+	}
+}
+
+// Enable=false 时不应建库，cleanup 也保持 nil。
+func TestInitDB_Disabled(t *testing.T) {
+	old := config.C.Storage.DataBase
+	defer func() { config.C.Storage.DataBase = old }()
+
+	config.C.Storage.DataBase.Enable = false
+
+	db, cleanup, err := InitDB(context.Background())
+	if err != nil {
+		t.Fatalf("Enable=false 不该报错: %v", err)
+	}
+	if db != nil || cleanup != nil {
+		t.Errorf("Enable=false 时应返回 (nil, nil, nil)，实际 db=%v, cleanup 非 nil=%v",
+			db, cleanup != nil)
 	}
 }
