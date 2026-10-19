@@ -37,6 +37,13 @@ type AuthConfig struct {
 
 func AuthWithConfig(config AuthConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// CORS 预检请求不携带凭证,必须放行,由 CORS 中间件响应
+		// (否则 Auth 先于 CORS 执行,预检被 401,浏览器报无 Access-Control-Allow-Origin)
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
 		//if !AllowedPathPrefixes(c, config.AllowedPathPrefixes...) ||
 		if SkippedPathPrefixes(c, config.SkippedPathPrefixes...) ||
 			(config.Skipper != nil && config.Skipper(c)) {
