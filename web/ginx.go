@@ -112,7 +112,11 @@ func ResError(c *gin.Context, err error, status ...int) {
 	if e, ok := errors.As(err); ok {
 		er = e
 	} else {
-		er = errors.FromError(errors.InternalServerError("", err.Error()))
+		// 必须用 "%s" 包一层：errors.* 是 printf 变参函数，直接把 err.Error()
+		// 塞给 format 位置，消息里的 % 会被 fmt 当动词解释成 %!s(MISSING)，
+		// 既污染日志又把损坏后的文本返回给客户端（net/url 的 %zz、
+		// 驱动回显的 LIKE '%foo%' 都是高频来源）。
+		er = errors.FromError(errors.InternalServerError("", "%s", err.Error()))
 	}
 
 	code := int(er.Code)
