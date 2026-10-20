@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/puras/mog/config"
 	"github.com/puras/mog/contextx"
+
+	"gorm.io/gorm"
 )
 
 type testItem struct {
@@ -352,4 +355,212 @@ func TestInitDB_Disabled(t *testing.T) {
 		t.Errorf("Enable=false 时应返回 (nil, nil, nil)，实际 db=%v, cleanup 非 nil=%v",
 			db, cleanup != nil)
 	}
+}
+
+// —— RawOrderField / RawOrderFields ——
+
+func TestRawOrderField_ToSQL(t *testing.T) {
+	tests := []struct {
+		name string
+		in   RawOrderField
+		want string
+	}{
+		{"普通表达式", RawOrderField{Expr: "priority", Direction: DESC}, "priority DESC"},
+		{"CASE 表达式", RawOrderField{
+			Expr:      "CASE status WHEN 'enabled' THEN 0 ELSE 1 END",
+			Direction: ASC,
+		}, "CASE status WHEN 'enabled' THEN 0 ELSE 1 END ASC"},
+		{"空 Expr 跳过", RawOrderField{Expr: "", Direction: ASC}, ""},
+		{"仅空白 Expr 跳过", RawOrderField{Expr: "   \t\n ", Direction: DESC}, ""},
+		{"表达式前后空白裁剪", RawOrderField{Expr: "  priority  ", Direction: ASC}, "priority ASC"},
+		{"空方向补 ASC", RawOrderField{Expr: "priority"}, "priority ASC"},
+		{"小写方向归一", RawOrderField{Expr: "priority", Direction: "desc"}, "priority DESC"},
+		// 方向位不走引号，必须靠归一白名单挡住
+		{"非法方向降级 ASC", RawOrderField{Expr: "priority", Direction: "; DROP TABLE t--"}, "priority ASC"},
+		// 单引号是 SQL 字面量的一部分，必须原样保留，不能做任何转义或改写
+		{"单引号原样保留", RawOrderField{
+			Expr:      "CASE WHEN name = 'O''Brien' THEN 1 ELSE 0 END",
+			Direction: DESC,
+		}, "CASE WHEN name = 'O''Brien' THEN 1 ELSE 0 END DESC"},
+		{"函数调用原样保留", RawOrderField{Expr: "LENGTH(name)", Direction: DESC}, "LENGTH(name) DESC"},
+		{"NULLS LAST 原样保留", RawOrderField{Expr: "created_at NULLS LAST", Direction: ASC}, "created_at NULLS LAST ASC"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.in.ToSQL(); got != tt.want {
+				t.Errorf("ToSQL() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRawOrderFields_SkipsEmpty(t *testing.T) {
+	in := RawOrderFields{
+		{Expr: "priority", Direction: DESC},
+		{Expr: "", Direction: ASC},
+		{Expr: "   ", Direction: ASC},
+		{Expr: "weight", Direction: DESC},
+	}
+	if got, want := in.toSQL(), "priority DESC, weight DESC"; got != want {
+		t.Errorf("toSQL() = %q, want %q", got, want)
+	}
+
+	if got := (RawOrderFields{}).toSQL(); got != "" {
+		t.Errorf("空切片应返回空串，得到 %q", got)
+	}
+	if got := (RawOrderFields{{Expr: "  "}}).toSQL(); got != "" {
+		t.Errorf("全空白应返回空串，得到 %q", got)
+	}
+}
+
+// raw 与 OrderFields 合并成一次 Order，raw 在前。
+func TestWrapQueryOptions_RawOrderFields(t *testing.T) {
+	tr := newTestDB(t)
+
+	// 不引号化的 raw 通道
+	if got, want := orderByClause(
+		RawOrderFields{{Expr: "CASE status WHEN 'enabled' THEN 0 ELSE 1 END", Direction: ASC}},
+		nil, tr.DB,
+	), "CASE status WHEN 'enabled' THEN 0 ELSE 1 END ASC"; got != want {
+		t.Errorf("raw only = %q, want %q", got, want)
+	}
+
+	// raw 在前、OrderFields 在后，后者按方言加引号
+	got := orderByClause(
+		RawOrderFields{{Expr: "CASE status WHEN 'enabled' THEN 0 ELSE 1 END", Direction: ASC}},
+		OrderByParams{{Field: "priority", Direction: DESC}, {Field: "created_at", Direction: DESC}},
+		tr.DB,
+	)
+	want := "CASE status WHEN 'enabled' THEN 0 ELSE 1 END ASC, `priority` DESC, `created_at` DESC"
+	if got != want {
+		t.Errorf("merged = %q\n     want %q", got, want)
+	}
+
+	// 两边都空 → 空串，wrapQueryOptions 据此跳过 Order
+	if got := orderByClause(RawOrderFields{{Expr: " "}}, OrderByParams{{Field: "1=1"}}, tr.DB); got != "" {
+		t.Errorf("全部无效时应返回空串，得到 %q", got)
+	}
+
+	// 断言真的只调了一次 Order：用 DryRun 走完整 SQL 渲染，ORDER BY 只该出现一次。
+	// 若把 raw 与 OrderFields 分成两次 db.Order()，GORM 会用逗号拼接成
+	// "ORDER BY a, ORDER BY b"，这里就会暴露。
+	dry := tr.DB.Session(&gorm.Session{DryRun: true}).Model(&testItem{})
+	var dryOut []testItem
+	wrapQueryOptions(dry, QueryOptions{
+		RawOrderFields: RawOrderFields{{Expr: "name", Direction: ASC}},
+		OrderFields:    OrderByParams{{Field: "id", Direction: DESC}},
+	}).Find(&dryOut)
+
+	sql := dry.Statement.SQL.String()
+	if n := strings.Count(sql, "ORDER BY"); n != 1 {
+		t.Errorf("ORDER BY 出现 %d 次，want 1: %q", n, sql)
+	}
+	wantSQL := "SELECT * FROM `test_item` ORDER BY name ASC, `id` DESC"
+	if sql != wantSQL {
+		t.Errorf("SQL = %q\n  want %q", sql, wantSQL)
+	}
+}
+
+// 端到端：mogo admin 渠道列表的状态分层排序。
+// 修复前 CASE 项被 identPattern 静默丢弃，auto_disabled 会排到最前面。
+func TestWrapQueryOptions_RawOrderFields_AppliesCASE(t *testing.T) {
+	tr := newTestDB(t)
+	if err := tr.DB.AutoMigrate(&statusItem{}); err != nil {
+		t.Fatal(err)
+	}
+
+	// 故意按"错误顺序"插入，确保结果不是靠插入顺序蒙对
+	rows := []statusItem{
+		{ID: "1", Status: "disabled", Name: "d"},
+		{ID: "2", Status: "auto_disabled", Name: "ad"},
+		{ID: "3", Status: "enabled", Name: "e"},
+		{ID: "4", Status: "auto_disabled", Name: "ad2"},
+	}
+	for i := range rows {
+		if err := tr.DB.Create(&rows[i]).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var got []statusItem
+	db := tr.DB.Model(&statusItem{})
+	if err := wrapQueryOptions(db, QueryOptions{
+		RawOrderFields: RawOrderFields{{
+			Expr:      "CASE status WHEN 'enabled' THEN 0 WHEN 'auto_disabled' THEN 1 WHEN 'disabled' THEN 2 ELSE 3 END",
+			Direction: ASC,
+		}},
+	}).Find(&got).Error; err != nil {
+		t.Fatalf("查询失败: %v", err)
+	}
+
+	// enabled 必须全部在最前，其次 auto_disabled，最后 disabled
+	wantOrder := []string{"enabled", "auto_disabled", "auto_disabled", "disabled"}
+	if len(got) != len(wantOrder) {
+		t.Fatalf("返回 %d 行，want %d", len(got), len(wantOrder))
+	}
+	for i, want := range wantOrder {
+		if got[i].Status != want {
+			statuses := make([]string, len(got))
+			for j := range got {
+				statuses[j] = got[j].Status
+			}
+			t.Fatalf("第 %d 行状态 = %q, want %q\n实际顺序: %v", i, got[i].Status, want, statuses)
+		}
+	}
+}
+
+// 对照组：同样的数据走 OrderFields 会被整条丢弃（证明白名单缺口真实存在，
+// 也是本次新增 RawOrderFields 的动机）。
+func TestWrapQueryOptions_OrderFieldsDropsCASE(t *testing.T) {
+	tr := newTestDB(t)
+	if err := tr.DB.AutoMigrate(&statusItem{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{"disabled", "enabled"} {
+		if err := tr.DB.Create(&statusItem{ID: s, Status: s}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	caseExpr := "CASE status WHEN 'enabled' THEN 0 ELSE 1 END"
+	if dropped := (OrderByParams{{Field: caseExpr, Direction: ASC}}).DroppedFields(); len(dropped) != 1 || dropped[0] != caseExpr {
+		t.Fatalf("DroppedFields() = %v, want [%q]", dropped, caseExpr)
+	}
+
+	db := tr.DB.Model(&statusItem{})
+	if s := orderByClause(nil, OrderByParams{{Field: caseExpr, Direction: ASC}}, db); s != "" {
+		t.Fatalf("CASE 表达式本应被 OrderFields 丢弃，实际生成 %q", s)
+	}
+}
+
+// DroppedFields 保序报告非法项，合法项不出现。
+func TestOrderByParams_DroppedFields(t *testing.T) {
+	p := OrderByParams{
+		{Field: "name", Direction: ASC},
+		{Field: "CASE status WHEN 'a' THEN 0 END", Direction: ASC},
+		{Field: "id", Direction: DESC},
+		{Field: "1=1", Direction: ASC},
+	}
+	got := p.DroppedFields()
+	want := []string{"CASE status WHEN 'a' THEN 0 END", "1=1"}
+	if len(got) != len(want) {
+		t.Fatalf("DroppedFields() = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("DroppedFields() = %v, want %v", got, want)
+		}
+	}
+
+	if got := (OrderByParams{{Field: "name"}}).DroppedFields(); got != nil {
+		t.Errorf("全部合法时应返回 nil，得到 %v", got)
+	}
+}
+
+// statusItem 带 status 列，用于验证 CASE 分层排序（testItem 没有该字段）。
+type statusItem struct {
+	ID     string `gorm:"primaryKey;size:64"`
+	Status string `gorm:"size:32"`
+	Name   string `gorm:"size:64"`
 }

@@ -34,6 +34,14 @@ type QueryOptions struct {
 	SelectFields []string
 	OmitFields   []string
 	OrderFields  OrderByParams
+	// RawOrderFields 原样拼进 ORDER BY 的表达式（不做标识符白名单、不加方言引号）。
+	//
+	// 安全前提：表达式必须由服务端代码构造，**禁止**直接来自 HTTP query 参数。
+	// 需要方言引号 / 保留字列名请继续用 OrderFields。
+	//
+	// 拼接顺序：RawOrderFields 全部在前，OrderFields 在后——典型用法是先按
+	// 表达式分层（CASE ... END），再在同层内按普通列细分。
+	RawOrderFields RawOrderFields
 }
 
 type Direction string
@@ -97,8 +105,12 @@ func (p OrderByParams) Validate() error {
 // 请用 ToSQLWith。
 //
 // 保底策略是丢弃非法项而非报错：这是排序，排序不了不该让查询失败。
-// 想要错误信号请先调 Validate。全部项非法时返回空串——注意空串意味着
-// "本次查询不带 ORDER BY"，调用方需自行跳过 db.Order("")。
+// 想要错误信号请先调 Validate；想知道具体丢了什么请用 DroppedFields。
+// 全部项非法时返回空串——注意空串意味着 "本次查询不带 ORDER BY"，
+// 调用方需自行跳过 db.Order("")。
+//
+// 注意：本方法的白名单只接受标识符，CASE ... END / NULLS LAST / 函数调用
+// 这类表达式会被丢弃。服务端构造的表达式请走 QueryOptions.RawOrderFields。
 func (p OrderByParams) ToSQL() string {
 	return p.toSQL(nil)
 }
@@ -137,6 +149,86 @@ func (p OrderByParams) toSQL(db *gorm.DB) string {
 	return strings.Join(parts, ", ")
 }
 
+// DroppedFields 返回会被 toSQL 丢弃的非法项（按原顺序）。
+//
+// 仅供调用方自查 / 打日志，不改变 toSQL 的丢弃行为。
+//
+// 典型用途：OrderFields 直接承载了用户的 ?order_by= 时，handler 应在进入
+// 查询前用 Validate() 判 400；DroppedFields 则适合在中间层做一次"有东西被
+// 静默丢弃"的告警日志，避免白名单生效后功能悄悄失效而无人察觉。
+func (p OrderByParams) DroppedFields() []string {
+	var dropped []string
+	for _, v := range p {
+		if !identPattern.MatchString(strings.TrimSpace(v.Field)) {
+			dropped = append(dropped, v.Field)
+		}
+	}
+	return dropped
+}
+
+// —— raw ORDER BY ——
+
+// RawOrderField 一条 raw 排序表达式。
+//
+// Expr 原样拼进 SQL，**无任何校验**。这类表达式（CASE / NULLS LAST /
+// 函数调用）本质上无法用标识符正则判定合法性，硬加过滤只会重演"静默丢弃"
+// 事故，所以防注入责任明确归属调用方：
+//
+//   - 必须由服务端代码构造，禁止直接拼接 HTTP query 参数；
+//   - 需要列名引号或保留字处理，请改用 OrderByParams（走方言引号）。
+//
+// Direction 是唯一走白名单的位——引号包不住关键字，非法方向仍降级为 ASC。
+type RawOrderField struct {
+	// Expr 排序表达式，如 "CASE status WHEN 'a' THEN 0 ELSE 1 END"。
+	// 空串（含仅空白）时跳过该项。
+	Expr string
+	// Direction 排序方向，仍走 normalized() 归一（只允许 ASC/DESC，非法降级 ASC）——
+	// 方向位无法用引号保护，这一层白名单必须保留。
+	Direction Direction
+}
+
+// RawOrderFields 一组 raw 排序表达式。命名的 slice 类型只为挂方法；
+// 构造时仍可直接用 []RawOrderField{...} 字面量（两者可互相赋值）。
+type RawOrderFields []RawOrderField
+
+// ToSQL 生成单条 raw 排序片段，Expr 为空白时返回空串（表示"跳过该项"）。
+func (f RawOrderField) ToSQL() string {
+	expr := strings.TrimSpace(f.Expr)
+	if expr == "" {
+		return ""
+	}
+	return expr + " " + string(f.Direction.normalized())
+}
+
+// toSQL 生成 raw ORDER BY 片段，丢弃 Expr 为空的项。
+// 全部为空时返回空串（调用方应先判断再调 db.Order）。
+func (p RawOrderFields) toSQL() string {
+	if len(p) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(p))
+	for _, f := range p {
+		if s := f.ToSQL(); s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// orderByClause 合并 raw 与标识符两条通道，raw 在前、OrderFields 在后。
+// 两条都为空时返回空串，调用方据此跳过 db.Order()——GORM 会把 "" 当成
+// 一列 Raw 排序，产出语法错误的 "ORDER BY "。
+func orderByClause(raw RawOrderFields, fields OrderByParams, db *gorm.DB) string {
+	var parts []string
+	if s := raw.toSQL(); s != "" {
+		parts = append(parts, s)
+	}
+	if s := fields.ToSQLWith(db); s != "" {
+		parts = append(parts, s)
+	}
+	return strings.Join(parts, ", ")
+}
+
 func (t *Trans) Exec(ctx context.Context, fn TransFunc) error {
 	if _, ok := contextx.FromTrans(ctx); ok {
 		return fn(ctx)
@@ -169,10 +261,10 @@ func wrapQueryOptions(db *gorm.DB, opts QueryOptions) *gorm.DB {
 	if len(opts.OmitFields) > 0 {
 		db = db.Omit(opts.OmitFields...)
 	}
-	if len(opts.OrderFields) > 0 {
-		// 全部排序项非法时 ToSQLWith 返回空串，此时必须跳过 Order：
+	if len(opts.OrderFields) > 0 || len(opts.RawOrderFields) > 0 {
+		// 全部排序项被丢弃 / 表达式为空时返回空串，此时必须跳过 Order：
 		// gorm 会把空串当成一列 Raw 排序，产出语法错误的 "ORDER BY "。
-		if s := opts.OrderFields.ToSQLWith(db); s != "" {
+		if s := orderByClause(opts.RawOrderFields, opts.OrderFields, db); s != "" {
 			db = db.Order(s)
 		}
 	}

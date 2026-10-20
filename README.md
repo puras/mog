@@ -127,6 +127,61 @@ err := trans.Exec(ctx, func(ctx context.Context) error {
 })
 ```
 
+#### 排序：两条通道
+
+`QueryOptions` 有两条排序通道，按「字段值从哪来」选：
+
+| 通道 | 适用场景 | 行为 |
+|---|---|---|
+| `OrderFields` | 字段名可能来自 HTTP query | 标识符白名单 + 方言引号；**不合法项被静默丢弃** |
+| `RawOrderFields` | 表达式由服务端代码构造 | 原样拼接，不加引号、不做白名单 |
+
+```go
+// ① 普通列排序：自动加方言引号（MySQL/SQLite 反引号、PG 双引号），
+//    保留字列名（order / key）也能正常工作。
+opts := dbx.QueryOptions{
+    OrderFields: dbx.OrderByParams{
+        {Field: "created_at", Direction: dbx.DESC},
+        {Field: "id", Direction: dbx.ASC},
+    },
+}
+
+// ② 表达式排序（CASE / 函数 / NULLS LAST）：走 RawOrderFields。
+//    典型用法：先按表达式分层，再在同层内按普通列细分。
+opts := dbx.QueryOptions{
+    RawOrderFields: dbx.RawOrderFields{
+        {
+            Expr:      "CASE status WHEN 'enabled' THEN 0 WHEN 'auto_disabled' THEN 1 ELSE 2 END",
+            Direction: dbx.ASC,
+        },
+    },
+    OrderFields: dbx.OrderByParams{
+        {Field: "priority", Direction: dbx.DESC},
+    },
+}
+// 生成：ORDER BY CASE ... END ASC, `priority` DESC
+```
+
+> **⚠️ `RawOrderFields.Expr` 禁止直接接收 HTTP query 参数。**
+> 它不做任何校验或转义，防注入责任完全在调用方。用户可控的排序需求请用
+> `OrderFields`；若需要把用户输入映射成表达式，务必走服务端白名单
+> （如 `switch orderBy { case "status": expr = "CASE ..." }`）。
+
+`OrderFields` 静默丢弃非法项是刻意取舍（排序不了不该让查询失败），但丢弃
+是可以被观测到的：
+
+```go
+// handler 层：把非法 ?order_by= 判成 400，而不是静默忽略
+if err := params.OrderFields.Validate(); err != nil {
+    return web.ResError(c, errors.BadRequest("", "%s", err))
+}
+
+// 中间层：只想告警、不想中断请求
+if dropped := params.OrderFields.DroppedFields(); len(dropped) > 0 {
+    logger.From(ctx).Warn("orderBy fields dropped", zap.Strings("fields", dropped))
+}
+```
+
 ### 认证中间件
 
 基于 JWT 的认证，支持多种存储后端：

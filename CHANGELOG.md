@@ -8,6 +8,10 @@
 ## [Unreleased]
 
 ### Added
+- `dbx.QueryOptions.RawOrderFields`：raw 排序表达式通道，支持 `CASE ... END`、函数调用、
+  `NULLS LAST` 等无法用标识符正则描述的排序。raw 片段排在 `OrderFields` 之前，两者合并为
+  一次 `ORDER BY`。`Expr` 不做校验（禁止接收 HTTP query 直传值），`Direction` 仍走白名单归一。
+- `dbx.OrderByParams.DroppedFields()`：列出会被 `ToSQL` 静默丢弃的非法项，供调用方告警 / 自查。
 - 项目文档（CLAUDE.md）
 
 ### Changed
@@ -16,6 +20,11 @@
 
 ### Fixed
 - 完成默认 CRUD 功能，Model 配合修改
+- `dbx`：`OrderByParams` 的标识符白名单会静默丢弃 `CASE ... END` 类表达式。
+  影响面：依赖 `OrderFields` 传表达式的调用方（如 mogo admin 渠道列表的状态分层排序
+  `enabled > auto_disabled > disabled`）会静默失效，结果顺序与预期相反。
+  修法不是放宽白名单（那会重新打开注入面），而是新增 `RawOrderFields` 显式通道，
+  并配 `DroppedFields()` 让丢弃可观测。
 
 ## [0.1.4] - 2023-09-27
 
