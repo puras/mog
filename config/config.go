@@ -151,7 +151,7 @@ type Middleware struct {
 	}
 	CopyBody struct {
 		SkippedPathPrefixes []string
-		MaxContentLen       int64 `default:33554432` // max content length (default 32MB)
+		MaxContentLen       int64 `default:"33554432"` // max content length (default 32MB)
 	}
 	RateLimiter struct {
 		Enable              bool

@@ -243,8 +243,9 @@ func isFrameKey(key string) bool {
 //   - 关闭颜色时按原文输出。
 //
 // 例子：
-//   msg = "[downstream] 请求 (claude-code → MoGo)"
-//   输出 = "\x1b[1;36m[downstream]\x1b[0m \x1b[90m请求 (...)\x1b[0m"
+//
+//	msg = "[downstream] 请求 (claude-code → MoGo)"
+//	输出 = "\x1b[1;36m[downstream]\x1b[0m \x1b[90m请求 (...)\x1b[0m"
 //
 // 这让业务前缀一眼可见，同时 msg 主体仍比 INFO/CYAN tag 浅一档。
 func writeMessage(buf *buffer.Buffer, msg string) {
