@@ -66,15 +66,38 @@ func Start(ctx context.Context, injector *inject.Injector, registryRoutes func(c
 	}, nil
 }
 
+// applyGinMode 让 gin 模式跟随 General.DebugMode：此前写死 DebugMode，
+// 生产环境也会打印路由表与 [GIN-debug] 日志。与 command/start.go 的
+// config.C.IsDebug() 判定保持同一开关。
+func applyGinMode() {
+	if config.C.IsDebug() {
+		gin.SetMode(gin.DebugMode)
+		return
+	}
+	gin.SetMode(gin.ReleaseMode)
+}
+
 func startHTTPServer(ctx context.Context, registryRoutes func(ctx context.Context, e *gin.Engine) error, parseCurrentUser func(c *gin.Context) (*middleware.AuthInfo, error)) (func(), error) {
-	gin.SetMode(gin.DebugMode)
+	applyGinMode()
 
 	e := gin.New()
 
-	// 中间件应用
-	e.Use(middleware.Recovery())
-	e.Use(middleware.Trace())
-	e.Use(middleware.Logger())
+	// 中间件应用：全部走 config，空值由各中间件的归一逻辑兜底。
+	// 此前这里用的是 middleware.Recovery/Trace/Logger()，即写死的
+	// Default*Config，导致 config 里 [Middleware.*] 整段配置无人消费。
+	e.Use(middleware.RecoveryWithConfig(middleware.RecoveryConfig{
+		Skip: config.C.Middleware.Recovery.Skip,
+	}))
+	e.Use(middleware.TraceWithConfig(middleware.TraceConfig{
+		SkippedPathPrefixes: config.C.Middleware.Trace.SkippedPathPrefixes,
+		RequestHeaderKey:    config.C.Middleware.Trace.RequestHeaderKey,
+		ResponseTraceKey:    config.C.Middleware.Trace.ResponseTraceKey,
+	}))
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		SkippedPathPrefixes:      config.C.Middleware.Logger.SkippedPathPrefixes,
+		MaxOutputRequestBodyLen:  config.C.Middleware.Logger.MaxOutputRequestBodyLen,
+		MaxOutputResponseBodyLen: config.C.Middleware.Logger.MaxOutputResponseBodyLen,
+	}))
 	e.Use(middleware.AuthWithConfig(middleware.AuthConfig{
 		AllowedPathPrefixes: []string{config.C.General.ContextPath},
 		SkippedPathPrefixes: config.C.Middleware.Auth.SkippedPathPrefixes,

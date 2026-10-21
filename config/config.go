@@ -146,8 +146,8 @@ type Middleware struct {
 	}
 	Logger struct {
 		SkippedPathPrefixes      []string
-		MaxOutputRequestBodyLen  int `default:"4096"`
-		MaxOutputResponseBodyLen int `default:"1024"`
+		MaxOutputRequestBodyLen  int `default:"1048576"` // 1MB
+		MaxOutputResponseBodyLen int `default:"1048576"` // 1MB
 	}
 	CopyBody struct {
 		SkippedPathPrefixes []string

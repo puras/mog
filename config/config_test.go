@@ -36,7 +36,8 @@ func TestDefaultTagsApplied(t *testing.T) {
 		{"Storage.Cache.Type", C.Storage.Cache.Type, "memory"},
 		{"Middleware.Auth.SigningMethod", C.Middleware.Auth.SigningMethod, "HS512"},
 		{"Middleware.Auth.Expired", C.Middleware.Auth.Expired, 86400},
-		{"Middleware.Logger.MaxOutputRequestBodyLen", C.Middleware.Logger.MaxOutputRequestBodyLen, 4096},
+		{"Middleware.Logger.MaxOutputRequestBodyLen", C.Middleware.Logger.MaxOutputRequestBodyLen, 1048576},
+		{"Middleware.Logger.MaxOutputResponseBodyLen", C.Middleware.Logger.MaxOutputResponseBodyLen, 1048576},
 		// 这一项原来是 `default:33554432`（漏引号），默认值静默失效为 0
 		{"Middleware.CopyBody.MaxContentLen", C.Middleware.CopyBody.MaxContentLen, int64(33554432)},
 	}
