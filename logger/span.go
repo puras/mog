@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -10,12 +9,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// spanPool 通过 sync.Pool 复用 span，零分配创建新 span。
-var spanPool = sync.Pool{
-	New: func() any { return &span{} },
-}
-
 // span 是单次调用链上的逻辑节点，承载 name / parent / depth / start / fields / err。
+//
+// 这里刻意不做对象池复用。父 span 被 End 后，已启动的子 span 仍持有
+// parent 指针（End 时要读 parent.name 打 span_parent）；若把父的 span 归还
+// 到池里，下一次 Start 取出同一对象并写成新名字，子 span 就会打印出别人的
+// 父名，跨 goroutine 时更是对非原子字段的数据竞争。实测可复现：
+//
+//	End 前 child.parent.name = "root"
+//	复用后 child.parent.name = "STRANGER"
+//
+// 每次 Start 一次堆分配的代价远小于一次错位的 trace 数据。
 type span struct {
 	name    string
 	parent  *span
@@ -35,20 +39,16 @@ type span struct {
 //	defer sp.End()
 //	if err != nil { sp.Set("err", err); return err }
 func Start(ctx context.Context, name string) (context.Context, *SpanHandle) {
-	s := spanPool.Get().(*span)
-	s.name = name
-	s.start = time.Now()
-	s.err = nil
-	s.ended.Store(false)
-	s.counter.Store(0)
-	s.fields = s.fields[:0]
+	s := &span{
+		name:  name,
+		start: time.Now(),
+	}
 
 	if p := fromSpan(ctx); p != nil {
 		s.parent = p
 		s.depth = p.depth + 1
 		p.counter.Add(1)
 	} else {
-		s.parent = nil
 		s.depth = 0
 	}
 
@@ -89,7 +89,6 @@ func (h *SpanHandle) End() {
 
 	base := zap.L()
 	if base == nil {
-		spanPool.Put(h.s)
 		return
 	}
 	if h.s.err != nil {
@@ -97,7 +96,6 @@ func (h *SpanHandle) End() {
 	} else {
 		base.Info(h.s.name, fields...)
 	}
-	spanPool.Put(h.s)
 }
 
 // Set 在 span 上附加 KV。k 必须为常量字符串；v 自动转 zap.Field。

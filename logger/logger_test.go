@@ -162,3 +162,93 @@ func TestMultiCore_DisableSink(t *testing.T) {
 		t.Fatal("active core should receive b")
 	}
 }
+
+// 父 span End 之后，已启动的子 span 仍须打印正确的 span_parent。
+//
+// 修复前 span 走 sync.Pool 复用：父 End 时被归还，下一次 Start 取出同一
+// 对象并写上新名字，子 span 的 span_parent 就会变成别人的名字。
+func TestSpan_ParentNameSurvivesParentEnd(t *testing.T) {
+	w := &captureWriter{}
+	defer installJSONLogger(w, zapcore.DebugLevel)()
+
+	ctx := context.Background()
+	ctxRoot, root := Start(ctx, "root")
+	_, child := Start(ctxRoot, "child")
+
+	root.End() // 修复前此处会把 root 归还池中
+
+	// 另起一条无关调用链：若走对象池，它会拿走刚归还的 root 对象
+	_, stranger := Start(ctx, "STRANGER")
+
+	child.End()
+	stranger.End()
+
+	var childEntry map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(w.String()), "\n") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("解析日志失败: %v (%s)", err, line)
+		}
+		if m["span"] == "child" {
+			childEntry = m
+		}
+	}
+	if childEntry == nil {
+		t.Fatalf("未找到 child span 日志: %s", w.String())
+	}
+	if got := childEntry["span_parent"]; got != "root" {
+		t.Errorf("child 的 span_parent = %v，want root（父 span 已被复用）", got)
+	}
+}
+
+// 同一 goroutine 内 span 字段互不串味：修复前池复用会让 fields 残留。
+func TestSpan_FieldsDoNotLeak(t *testing.T) {
+	w := &captureWriter{}
+	defer installJSONLogger(w, zapcore.DebugLevel)()
+
+	ctx := context.Background()
+	_, first := Start(ctx, "first")
+	first.Set("leak", "should-not-appear")
+	first.End()
+
+	_, second := Start(ctx, "second")
+	second.End()
+
+	for _, line := range strings.Split(strings.TrimSpace(w.String()), "\n") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("解析日志失败: %v", err)
+		}
+		if m["span"] == "second" {
+			if _, ok := m["leak"]; ok {
+				t.Errorf("second span 残留了 first 的字段: %+v", m)
+			}
+		}
+	}
+}
+
+// 并发开 span 不应触发数据竞争（配合 -race 使用）。
+func TestSpan_Concurrent(t *testing.T) {
+	w := &captureWriter{}
+	defer installJSONLogger(w, zapcore.DebugLevel)()
+
+	ctx := context.Background()
+	ctxRoot, root := Start(ctx, "root")
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, sp := Start(ctxRoot, "child")
+			sp.Set("k", "v")
+			sp.End()
+		}()
+	}
+	wg.Wait()
+	root.End()
+
+	if n := root.s.counter.Load(); n != 8 {
+		t.Errorf("span_children = %d, want 8", n)
+	}
+}
