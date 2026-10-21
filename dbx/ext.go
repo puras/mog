@@ -26,16 +26,22 @@ func LikeParameter(v string) string {
 	return "%" + v + "%"
 }
 
-func NotDeleted(db *gorm.DB) {
-	db.Where("deleted=false")
+// NotDeleted 追加 deleted=false 条件。
+//
+// 必须接住返回值：gorm 在 clone 链（如 Session 之后或根 DB）上会返回新实例，
+// 原地调用会静默丢条件。
+func NotDeleted(db *gorm.DB) *gorm.DB {
+	return db.Where("deleted=false")
 }
 
-func Where(db *gorm.DB, field string, value any) {
-	db.Where(field+"=?", value)
+// Where 追加 field=value 条件。返回值必须接住，原因同 NotDeleted。
+func Where(db *gorm.DB, field string, value any) *gorm.DB {
+	return db.Where(field+"=?", value)
 }
 
-func WhereId(db *gorm.DB, value any) {
-	db.Where("id=?", value)
+// WhereId 追加 id=value 条件。返回值必须接住，原因同 NotDeleted。
+func WhereId(db *gorm.DB, value any) *gorm.DB {
+	return db.Where("id=?", value)
 }
 
 // WhereLike 在 field 上加 LIKE 通配符匹配（跨方言大小写敏感性见下）。
@@ -47,8 +53,8 @@ func WhereId(db *gorm.DB, value any) {
 //
 // 调用方如需 PG 上的大小写不敏感行为，请自行实现 LOWER 包装（mog 不为单一方言
 // 提供方言分支 helper，避免 API 面被方言分歧污染）。
-func WhereLike(db *gorm.DB, field string, value string) {
-	db.Where(field+" like ?", LikeParameter(value))
+func WhereLike(db *gorm.DB, field string, value string) *gorm.DB {
+	return db.Where(field+" like ?", LikeParameter(value))
 }
 
 // WhereIn 在 field 上加 IN 匹配。
@@ -60,11 +66,14 @@ func WhereLike(db *gorm.DB, field string, value string) {
 // 相比 []any 版本，使用泛型 T 让调用方可以直接传 []int64 / []string 等
 // typed slice（无 boxing 拷贝），编译期即拒掉异构元素——SQL IN 天然同构，
 // 把约束上提到类型层比留到运行时更合算。
-func WhereIn[T any](db *gorm.DB, field string, values []T) {
+//
+// 返回值必须接住（原因同 NotDeleted）；values 为空时原样返回入参 db，
+// 保证链式调用不会拿到 nil。
+func WhereIn[T any](db *gorm.DB, field string, values []T) *gorm.DB {
 	if len(values) == 0 {
-		return
+		return db
 	}
-	db.Where(field+" IN ?", values)
+	return db.Where(field+" IN ?", values)
 }
 
 // GetTableName 通过 gorm.Statement.Parse 获取 model 对应的表名（动态，非硬编码）。

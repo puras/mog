@@ -564,3 +564,81 @@ type statusItem struct {
 	Status string `gorm:"size:32"`
 	Name   string `gorm:"size:64"`
 }
+
+// —— Where 系列必须返回可用的 *gorm.DB ——
+
+// gorm 的 Where 在 clone>0 时返回新实例。若 helper 丢弃返回值，条件会作用在
+// 被丢弃的副本上。Session() 与根 DB 都属于 clone>0，此前这两条路径静默丢条件。
+func TestWhere_ReturnsUsableDB(t *testing.T) {
+	tr := newTestDB(t)
+	for _, n := range []string{"a", "b"} {
+		if err := tr.DB.Create(&testItem{ID: n, Name: n}).Error; err != nil {
+			t.Fatal(n, err)
+		}
+	}
+
+	cases := []struct {
+		name string
+		base func() *gorm.DB
+	}{
+		{"Session()", func() *gorm.DB { return tr.DB.Session(&gorm.Session{}) }},
+		{"根 DB", func() *gorm.DB { return tr.DB }},
+		{"Model() 链", func() *gorm.DB { return tr.DB.Model(&testItem{}) }},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var got []testItem
+			if err := dbxWhereId(c.base(), "a").Find(&got).Error; err != nil {
+				t.Fatal(err)
+			}
+			if len(got) != 1 || got[0].ID != "a" {
+				t.Errorf("条件未生效，返回 %d 行: %+v", len(got), got)
+			}
+		})
+	}
+}
+
+// helper 便于在测试内以链式风格调用（等价于 db = dbx.WhereId(db, id)）。
+func dbxWhereId(db *gorm.DB, id string) *gorm.DB {
+	return WhereId(db, id)
+}
+
+func TestWhereIn_EmptyReturnsSameDB(t *testing.T) {
+	tr := newTestDB(t)
+	db := tr.DB.Model(&testItem{})
+
+	if got := WhereIn(db, "id", []string{}); got != db {
+		t.Error("values 为空时应原样返回入参 db，不能是 nil 或新实例")
+	}
+	if got := WhereIn(db, "id", []string(nil)); got == nil {
+		t.Error("nil values 时不能返回 nil")
+	}
+}
+
+// NotDeleted / Where 的返回值可直接接住并继续链式调用。
+func TestWhereChain_NotDeleted(t *testing.T) {
+	tr := newTestDB(t)
+	if err := tr.DB.AutoMigrate(&deletedItem{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tr.DB.Create(&deletedItem{ID: "live", Deleted: false}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := tr.DB.Create(&deletedItem{ID: "gone", Deleted: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	var got []deletedItem
+	if err := NotDeleted(tr.DB.Session(&gorm.Session{})).Find(&got).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != "live" {
+		t.Errorf("NotDeleted 条件未生效，返回 %d 行: %+v", len(got), got)
+	}
+}
+
+type deletedItem struct {
+	ID      string `gorm:"primaryKey;size:64"`
+	Deleted bool
+}

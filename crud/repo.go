@@ -47,7 +47,7 @@ func (self *CrudRepo[T]) Query(ctx context.Context, params QueryParams, pagePara
 		self.FillQueryParametersFunc(ctx, db, params)
 	}
 
-	dbx.NotDeleted(db)
+	db = dbx.NotDeleted(db)
 
 	var list []*T
 	pr, err := dbx.WrapPageQuery(ctx, db, pageParams, opt, &list)
@@ -62,8 +62,8 @@ func (self *CrudRepo[T]) Get(ctx context.Context, id string, opts ...dbx.QueryOp
 
 	item := new(T)
 	db := self.GetModelDB(ctx)
-	dbx.Where(db, "id", id)
-	dbx.NotDeleted(db)
+	db = dbx.Where(db, "id", id)
+	db = dbx.NotDeleted(db)
 	ok, err := dbx.FindOne(ctx, db, opt, item)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -80,7 +80,7 @@ func (self *CrudRepo[T]) Create(ctx context.Context, item *T) error {
 
 func (self *CrudRepo[T]) Update(ctx context.Context, id string, item *T) error {
 	db := self.GetModelDB(ctx)
-	dbx.Where(db, "id", id)
+	db = dbx.Where(db, "id", id)
 	ret := db.Select("*").Omit("created_at", "deleted", "deleted_at").Updates(item)
 	return errors.WithStack(ret.Error)
 }
@@ -88,7 +88,7 @@ func (self *CrudRepo[T]) Update(ctx context.Context, id string, item *T) error {
 // Delete 逻辑删除
 func (self *CrudRepo[T]) Delete(ctx context.Context, id string) error {
 	db := self.GetModelDB(ctx)
-	dbx.Where(db, "id", id)
+	db = dbx.Where(db, "id", id)
 	ret := db.Omit("updated_at").Updates(map[string]interface{}{"deleted": true, "deleted_at": time.Now()})
 	return errors.WithStack(ret.Error)
 }
@@ -96,7 +96,7 @@ func (self *CrudRepo[T]) Delete(ctx context.Context, id string) error {
 // HardDelete 物理删除
 func (self *CrudRepo[T]) HardDelete(ctx context.Context, id string) error {
 	db := self.GetModelDB(ctx)
-	dbx.Where(db, "id", id)
+	db = dbx.Where(db, "id", id)
 	ret := db.Delete(new(T))
 	return errors.WithStack(ret.Error)
 }
