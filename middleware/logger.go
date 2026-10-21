@@ -18,11 +18,23 @@ type LoggerConfig struct {
 	RequestHeaderKey         string // 默认 X-Request-Id
 }
 
+// 默认配置。提成常量供 DefaultLoggerConfig 与 LoggerWithConfig 的空值
+// 归一共用，避免同一字面量多处漂移。
+//
+// 此前存在不一致：DefaultLoggerConfig 里是 1024*1024，而 LoggerWithConfig
+// 的归一值是 4096 / 1024，导致 Logger() 与 LoggerWithConfig(LoggerConfig{})
+// 两个入口的默认阈值相差 256 倍。这里统一取 1MB。
+const (
+	defaultLogRequestHeaderKey = "X-Request-Id"
+	defaultMaxOutputReqBodyLen = 1024 * 1024
+	defaultMaxOutputResBodyLen = 1024 * 1024
+)
+
 // DefaultLoggerConfig 提供基础默认值。
 var DefaultLoggerConfig = LoggerConfig{
-	MaxOutputRequestBodyLen:  1024 * 1024,
-	MaxOutputResponseBodyLen: 1024 * 1024,
-	RequestHeaderKey:         "X-Request-Id",
+	MaxOutputRequestBodyLen:  defaultMaxOutputReqBodyLen,
+	MaxOutputResponseBodyLen: defaultMaxOutputResBodyLen,
+	RequestHeaderKey:         defaultLogRequestHeaderKey,
 }
 
 // Logger 装载默认配置 HTTP 访问日志中间件。
@@ -39,13 +51,13 @@ func Logger() gin.HandlerFunc {
 //   - 请求/响应 body 仅在 <配置长度阈值 时打印，规避大对象。
 func LoggerWithConfig(cfg LoggerConfig) gin.HandlerFunc {
 	if cfg.RequestHeaderKey == "" {
-		cfg.RequestHeaderKey = "X-Request-Id"
+		cfg.RequestHeaderKey = defaultLogRequestHeaderKey
 	}
 	if cfg.MaxOutputRequestBodyLen == 0 {
-		cfg.MaxOutputRequestBodyLen = 4096
+		cfg.MaxOutputRequestBodyLen = defaultMaxOutputReqBodyLen
 	}
 	if cfg.MaxOutputResponseBodyLen == 0 {
-		cfg.MaxOutputResponseBodyLen = 1024
+		cfg.MaxOutputResponseBodyLen = defaultMaxOutputResBodyLen
 	}
 
 	return func(c *gin.Context) {
