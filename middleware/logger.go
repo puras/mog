@@ -66,14 +66,15 @@ func LoggerWithConfig(cfg LoggerConfig) gin.HandlerFunc {
 			return
 		}
 
-		// —— 注入 trace_id ——
+		// —— 注入 trace_id 与 request tag ——
+		// 写回 c.Request，让后续中间件（尤其是 Auth）能在此基础上继续叠加。
 		ctx := c.Request.Context()
 		if v := c.GetHeader(cfg.RequestHeaderKey); v != "" {
 			ctx = logger.NewTraceId(ctx, v)
-			c.Request = c.Request.WithContext(ctx)
 			c.Set("request_id", v)
 		}
 		ctx = logger.NewTag(ctx, logger.TagKeyRequest)
+		c.Request = c.Request.WithContext(ctx)
 
 		start := time.Now()
 		c.Next()
@@ -102,6 +103,6 @@ func LoggerWithConfig(cfg LoggerConfig) gin.HandlerFunc {
 			}
 		}
 
-		logger.From(ctx).InfoF("[HTTP]", fields...)
+		logger.From(c.Request.Context()).InfoF("[HTTP]", fields...)
 	}
 }

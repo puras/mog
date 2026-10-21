@@ -143,3 +143,34 @@ func TestLogger_SkippedPath(t *testing.T) {
 	}
 	_ = strings.TrimSpace
 }
+
+// 访问日志应带上 Auth 在 c.Next() 期间注入的 user_id。
+// 修复前 logger 用的是 c.Next() 之前的 ctx 快照，永远拿不到 user_id。
+func TestLogger_CapturesUserId(t *testing.T) {
+	logs := withObservedLogger(t)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(LoggerWithConfig(LoggerConfig{}))
+	r.Use(AuthWithConfig(AuthConfig{
+		Parse: func(c *gin.Context) (*AuthInfo, error) {
+			return &AuthInfo{UserId: "u-42"}, nil
+		},
+	}))
+	r.GET("/x", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/x", nil))
+
+	entries := logsFor(logs, "[HTTP]")
+	if len(entries) != 1 {
+		t.Fatalf("访问日志条数 = %d, want 1", len(entries))
+	}
+	got, ok := entries[0].ContextMap()["user_id"]
+	if !ok {
+		t.Fatal("访问日志缺少 user_id 字段（ctx 时机不对）")
+	}
+	if got != "u-42" {
+		t.Errorf("user_id = %v, want u-42", got)
+	}
+}
