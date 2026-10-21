@@ -36,6 +36,13 @@ type AuthConfig struct {
 }
 
 func AuthWithConfig(config AuthConfig) gin.HandlerFunc {
+	// Parse 缺失意味着认证逻辑不存在。运行期再调用会 nil panic（且发生在请求
+	// 中途，返回 500 而不是 401）；静默放行则等于把认证关掉，风险更大。
+	// 启动即失败是唯一安全的选择。
+	if config.Parse == nil {
+		panic("middleware.Auth: Parse 不能为 nil")
+	}
+
 	return func(c *gin.Context) {
 		// CORS 预检请求不携带凭证,必须放行,由 CORS 中间件响应
 		// (否则 Auth 先于 CORS 执行,预检被 401,浏览器报无 Access-Control-Allow-Origin)
